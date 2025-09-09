@@ -1,0 +1,34 @@
+name: Render GIF from asciinema cast
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'docs/assets/*.cast'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  cast_to_gif:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Convert cast to GIF (asciinema/asciicast2gif)
+        run: |
+          set -euxo pipefail
+          if [ ! -f docs/assets/dashboard.cast ]; then
+            echo 'No cast file found at docs/assets/dashboard.cast';
+            exit 0;
+          fi
+          docker run --rm -v "$PWD":/data asciinema/asciicast2gif \
+            -t solarized-dark -S 2 -s 2 \
+            /data/docs/assets/dashboard.cast /data/docs/assets/dashboard.gif
+
+      - name: Commit GIF if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: add/update dashboard GIF rendered from cast"
+          file_pattern: docs/assets/dashboard.gif
