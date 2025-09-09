@@ -23,9 +23,10 @@ The resulting shared library is packaged at `ratatui_py/_bundled/` and loaded au
 from ratatui_py import Terminal, Paragraph
 
 with Terminal() as term:
-    p = Paragraph.from_text("Hello from Python!\nThis is ratatui.")
+    p = Paragraph.from_text("Hello from Python!\nThis is ratatui.\n\nPress any key to exit.")
     p.set_block_title("Demo", show_border=True)
     term.draw_paragraph(p)
+    term.next_event(5000)  # wait for key or 5s
 ```
 
 List + Table + Gauge

@@ -2,11 +2,14 @@ README.md
 pyproject.toml
 setup.py
 src/ratatui_py/__init__.py
+src/ratatui_py/__main__.py
 src/ratatui_py/_ffi.py
+src/ratatui_py/examples.py
 src/ratatui_py/wrappers.py
 src/ratatui_py.egg-info/PKG-INFO
 src/ratatui_py.egg-info/SOURCES.txt
 src/ratatui_py.egg-info/dependency_links.txt
+src/ratatui_py.egg-info/entry_points.txt
 src/ratatui_py.egg-info/top_level.txt
 src/ratatui_py/_bundled/__init__.py
 src/ratatui_py/_bundled/libratatui_ffi.so
