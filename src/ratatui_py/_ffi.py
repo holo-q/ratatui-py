@@ -106,6 +106,19 @@ FFI_COLOR = {
     "White": 16,
 }
 
+# Widget kinds for batched frame drawing
+FFI_WIDGET_KIND = {
+    "Paragraph": 1,
+    "List": 2,
+    "Table": 3,
+    "Gauge": 4,
+    "Tabs": 5,
+    "BarChart": 6,
+    "Sparkline": 7,
+    "Chart": 8,
+    # 9 reserved for Scrollbar if feature-enabled
+}
+
 # ----- Library loader -----
 
 def _default_names():
@@ -252,6 +265,17 @@ def load_library(explicit: str | None = None) -> C.CDLL:
     lib.ratatui_headless_render_barchart.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
     lib.ratatui_headless_render_barchart.restype = C.c_bool
 
+    # Chart
+    lib.ratatui_chart_new.restype = C.c_void_p
+    lib.ratatui_chart_free.argtypes = [C.c_void_p]
+    lib.ratatui_chart_add_line.argtypes = [C.c_void_p, C.c_char_p, C.POINTER(C.c_double), C.c_size_t, FfiStyle]
+    lib.ratatui_chart_set_axes_titles.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p]
+    lib.ratatui_chart_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    lib.ratatui_terminal_draw_chart_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+    lib.ratatui_terminal_draw_chart_in.restype = C.c_bool
+    lib.ratatui_headless_render_chart.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+    lib.ratatui_headless_render_chart.restype = C.c_bool
+
     # Sparkline
     lib.ratatui_sparkline_new.restype = C.c_void_p
     lib.ratatui_sparkline_free.argtypes = [C.c_void_p]
@@ -272,6 +296,23 @@ def load_library(explicit: str | None = None) -> C.CDLL:
         lib.ratatui_terminal_draw_scrollbar_in.restype = C.c_bool
         lib.ratatui_headless_render_scrollbar.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
         lib.ratatui_headless_render_scrollbar.restype = C.c_bool
+
+    # Batched frame drawing
+    class FfiDrawCmd(C.Structure):
+        _fields_ = [
+            ("kind", C.c_uint32),
+            ("handle", C.c_void_p),
+            ("rect", FfiRect),
+        ]
+
+    lib.FfiDrawCmd = FfiDrawCmd  # expose for importers
+    lib.ratatui_terminal_draw_frame.argtypes = [C.c_void_p, C.POINTER(FfiDrawCmd), C.c_size_t]
+    lib.ratatui_terminal_draw_frame.restype = C.c_bool
+
+    # Headless frame render (for testing composites)
+    if hasattr(lib, 'ratatui_headless_render_frame'):
+        lib.ratatui_headless_render_frame.argtypes = [C.c_uint16, C.c_uint16, C.POINTER(FfiDrawCmd), C.c_size_t, C.POINTER(C.c_char_p)]
+        lib.ratatui_headless_render_frame.restype = C.c_bool
 
     _cached_lib = lib
     return lib

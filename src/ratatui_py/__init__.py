@@ -11,6 +11,7 @@ from ._ffi import (
     FFI_MOUSE_KIND,
     FFI_MOUSE_BUTTON,
     FFI_SCROLLBAR_ORIENT,
+    FFI_WIDGET_KIND,
 )
 from .wrappers import (
     Terminal,
@@ -23,6 +24,8 @@ from .wrappers import (
     BarChart,
     Sparkline,
     Scrollbar,
+    Chart,
+    DrawCmd,
     headless_render_paragraph,
     headless_render_list,
     headless_render_table,
@@ -30,6 +33,7 @@ from .wrappers import (
     headless_render_tabs,
     headless_render_barchart,
     headless_render_sparkline,
+    headless_render_chart,
 )
 
 __all__ = [
@@ -45,6 +49,7 @@ __all__ = [
     "FFI_MOUSE_KIND",
     "FFI_MOUSE_BUTTON",
     "FFI_SCROLLBAR_ORIENT",
+    "FFI_WIDGET_KIND",
     "Terminal",
     "Paragraph",
     "Style",
@@ -55,6 +60,8 @@ __all__ = [
     "BarChart",
     "Sparkline",
     "Scrollbar",
+    "Chart",
+    "DrawCmd",
     "headless_render_paragraph",
     "headless_render_list",
     "headless_render_table",
@@ -62,4 +69,5 @@ __all__ = [
     "headless_render_tabs",
     "headless_render_barchart",
     "headless_render_sparkline",
+    "headless_render_chart",
 ]
