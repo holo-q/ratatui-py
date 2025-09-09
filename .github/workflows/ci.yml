@@ -14,6 +14,10 @@ jobs:
         python-version: [ '3.9', '3.10', '3.11', '3.12' ]
     steps:
       - uses: actions/checkout@v4
+      - name: Install Rust (for ratatui_ffi build)
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -28,4 +32,3 @@ jobs:
         run: mypy src
       - name: Tests
         run: pytest -q
-
