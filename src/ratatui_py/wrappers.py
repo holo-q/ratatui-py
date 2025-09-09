@@ -55,7 +55,7 @@ class Paragraph:
     def line_break(self) -> None:
         self._lib.ratatui_paragraph_line_break(self._handle)
 
-    def set_block_title(self, title: str | None, show_border: bool = True) -> None:
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_paragraph_set_block_title(self._handle, t, bool(show_border))
 

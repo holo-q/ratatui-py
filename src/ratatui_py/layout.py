@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 Rect = Tuple[int, int, int, int]  # x, y, w, h
 
 
-def margin(rect: Rect, *, all: int | None = None, x: int = 0, y: int = 0) -> Rect:
+def margin(rect: Rect, *, all: Optional[int] = None, x: int = 0, y: int = 0) -> Rect:
     if all is not None:
         x = y = int(all)
     rx, ry, rw, rh = rect
@@ -50,4 +50,3 @@ def split_v(rect: Rect, *fractions: float, gap: int = 0) -> tuple[Rect, ...]:
         cols.append((xx, y, max(0, ww), h))
         xx += ww + (gap if i < len(fractions) - 1 else 0)
     return tuple(cols)
-

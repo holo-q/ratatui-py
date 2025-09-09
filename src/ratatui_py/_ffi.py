@@ -131,7 +131,10 @@ def _default_names():
 
 _cached_lib = None
 
-def load_library(explicit: str | None = None) -> C.CDLL:
+from typing import Optional
+
+
+def load_library(explicit: Optional[str] = None) -> C.CDLL:
     global _cached_lib
     if _cached_lib is not None:
         return _cached_lib
