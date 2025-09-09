@@ -96,9 +96,18 @@ jobs:
           name: sdist
           path: .
       - name: Check distributions
+        shell: bash
         run: |
+          set -euo pipefail
           python -m pip install -U pip twine
-          python -m twine check ./*.whl ./*.tar.gz
+          shopt -s nullglob
+          files=( ./*.whl ./*.tar.gz )
+          echo "Distributions to check: ${files[@]:-<none>}"
+          if ((${#files[@]})); then
+            python -m twine check "${files[@]}"
+          else
+            echo "No distribution files found to check."
+          fi
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

@@ -36,7 +36,7 @@ from .wrappers import (
     headless_render_sparkline,
     headless_render_chart,
 )
-from .layout import margin, split_h, split_v
+from .layout import margin, split_h, split_v, margin_rect, split_h_rect, split_v_rect
 from .util import frame_begin, BackgroundTask, ProcessTask
 from .types import Rect, RectLike, Point, Size
 
@@ -82,6 +82,9 @@ __all__ = [
     "margin",
     "split_h",
     "split_v",
+    "margin_rect",
+    "split_h_rect",
+    "split_v_rect",
     "frame_begin",
     "BackgroundTask",
     "ProcessTask",

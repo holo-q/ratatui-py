@@ -2,6 +2,7 @@ from __future__ import annotations
 import ctypes as C
 from dataclasses import dataclass
 from typing import Optional, Tuple, Iterable, Sequence, Callable, Any, List as _List, Union
+import enum
 from time import monotonic
 
 from ._ffi import (
@@ -21,12 +22,14 @@ from .types import RectLike
 
 @dataclass
 class Style:
-    fg: int = 0  # FFI_COLOR[...] value or 0
-    bg: int = 0
+    fg: Union[int, enum.IntEnum] = 0  # accepts raw int or Color-like enums
+    bg: Union[int, enum.IntEnum] = 0
     mods: int = 0
 
     def to_ffi(self) -> FfiStyle:
-        return FfiStyle(self.fg, self.bg, self.mods)
+        fg = int(self.fg) if isinstance(self.fg, enum.IntEnum) else int(self.fg)
+        bg = int(self.bg) if isinstance(self.bg, enum.IntEnum) else int(self.bg)
+        return FfiStyle(fg, bg, int(self.mods))
 
 class Paragraph:
     def __init__(self, handle: int, lib=None):
@@ -123,7 +126,7 @@ class Terminal:
         r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_chart_in(self._handle, c._handle, r))
 
-    def draw_frame(self, cmds: _List["DrawCmd"]) -> bool:
+    def draw_frame(self, cmds: Sequence["DrawCmd"]) -> bool:
         FfiDrawCmd = self._lib.FfiDrawCmd
         arr = (FfiDrawCmd * len(cmds))()
         # Keep owners alive across the FFI call to prevent use-after-free of handles.
