@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ratatui-py"
-version = "0.2.1"
+version = "0.2.2"
 description = "Python bindings for ratatui_ffi (Ratatui C ABI) via ctypes"
 readme = "README.md"
 authors = [{ name = "holo-q" }]
