@@ -38,6 +38,7 @@ from .wrappers import (
 )
 from .layout import margin, split_h, split_v
 from .util import frame_begin, BackgroundTask, ProcessTask
+from .types import Rect, RectLike, Point, Size
 
 __all__ = [
     "load_library",
@@ -66,6 +67,10 @@ __all__ = [
     "Chart",
     "DrawCmd",
     "App",
+    "Rect",
+    "RectLike",
+    "Point",
+    "Size",
     "headless_render_paragraph",
     "headless_render_list",
     "headless_render_table",

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import ctypes as C
 from dataclasses import dataclass
-from typing import Optional, Tuple, Iterable, Sequence, Callable, Any, List as _List
+from typing import Optional, Tuple, Iterable, Sequence, Callable, Any, List as _List, Union
 from time import monotonic
 
 from ._ffi import (
@@ -17,6 +17,7 @@ from ._ffi import (
     FFI_MOUSE_BUTTON,
     FFI_WIDGET_KIND,
 )
+from .types import RectLike
 
 @dataclass
 class Style:
@@ -87,39 +88,39 @@ class Terminal:
     def clear(self) -> None:
         self._lib.ratatui_terminal_clear(self._handle)
 
-    def draw_paragraph(self, p: Paragraph, rect: Optional[Tuple[int,int,int,int]] = None) -> bool:
+    def draw_paragraph(self, p: Paragraph, rect: Optional[RectLike] = None) -> bool:
         if rect is None:
             return bool(self._lib.ratatui_terminal_draw_paragraph(self._handle, p._handle))
-        r = FfiRect(*map(int, rect))
+        r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_paragraph_in(self._handle, p._handle, r))
 
-    def draw_list(self, lst: "List", rect: Tuple[int,int,int,int]) -> bool:
-        r = FfiRect(*map(int, rect))
+    def draw_list(self, lst: "List", rect: RectLike) -> bool:
+        r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_list_in(self._handle, lst._handle, r))
 
-    def draw_table(self, tbl: "Table", rect: Tuple[int,int,int,int]) -> bool:
-        r = FfiRect(*map(int, rect))
+    def draw_table(self, tbl: "Table", rect: RectLike) -> bool:
+        r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_table_in(self._handle, tbl._handle, r))
 
-    def draw_gauge(self, g: "Gauge", rect: Tuple[int,int,int,int]) -> bool:
-        r = FfiRect(*map(int, rect))
+    def draw_gauge(self, g: "Gauge", rect: RectLike) -> bool:
+        r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_gauge_in(self._handle, g._handle, r))
 
-    def draw_tabs(self, t: "Tabs", rect: Tuple[int,int,int,int]) -> bool:
-        r = FfiRect(*map(int, rect))
+    def draw_tabs(self, t: "Tabs", rect: RectLike) -> bool:
+        r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_tabs_in(self._handle, t._handle, r))
 
-    def draw_barchart(self, b: "BarChart", rect: Tuple[int,int,int,int]) -> bool:
-        r = FfiRect(*map(int, rect))
+    def draw_barchart(self, b: "BarChart", rect: RectLike) -> bool:
+        r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_barchart_in(self._handle, b._handle, r))
 
-    def draw_sparkline(self, s: "Sparkline", rect: Tuple[int,int,int,int]) -> bool:
-        r = FfiRect(*map(int, rect))
+    def draw_sparkline(self, s: "Sparkline", rect: RectLike) -> bool:
+        r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_sparkline_in(self._handle, s._handle, r))
 
     # Chart and batched frames
-    def draw_chart(self, c: "Chart", rect: Tuple[int,int,int,int]) -> bool:
-        r = FfiRect(*map(int, rect))
+    def draw_chart(self, c: "Chart", rect: RectLike) -> bool:
+        r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_chart_in(self._handle, c._handle, r))
 
     def draw_frame(self, cmds: _List["DrawCmd"]) -> bool:
@@ -634,33 +635,46 @@ class DrawCmd:
         self.owner = owner
 
     @staticmethod
-    def paragraph(p: Paragraph, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Paragraph"], p._handle, FfiRect(*map(int, rect)), owner=p)
+    def paragraph(p: Paragraph, rect: RectLike) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Paragraph"], p._handle, _ffi_rect(rect), owner=p)
 
     @staticmethod
-    def list(lst: List, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["List"], lst._handle, FfiRect(*map(int, rect)), owner=lst)
+    def list(lst: List, rect: RectLike) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["List"], lst._handle, _ffi_rect(rect), owner=lst)
 
     @staticmethod
-    def table(t: Table, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Table"], t._handle, FfiRect(*map(int, rect)), owner=t)
+    def table(t: Table, rect: RectLike) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Table"], t._handle, _ffi_rect(rect), owner=t)
 
     @staticmethod
-    def gauge(g: Gauge, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Gauge"], g._handle, FfiRect(*map(int, rect)), owner=g)
+    def gauge(g: Gauge, rect: RectLike) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Gauge"], g._handle, _ffi_rect(rect), owner=g)
 
     @staticmethod
-    def tabs(t: Tabs, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Tabs"], t._handle, FfiRect(*map(int, rect)), owner=t)
+    def tabs(t: Tabs, rect: RectLike) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Tabs"], t._handle, _ffi_rect(rect), owner=t)
 
     @staticmethod
-    def barchart(b: BarChart, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["BarChart"], b._handle, FfiRect(*map(int, rect)), owner=b)
+    def barchart(b: BarChart, rect: RectLike) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["BarChart"], b._handle, _ffi_rect(rect), owner=b)
 
     @staticmethod
-    def sparkline(s: Sparkline, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Sparkline"], s._handle, FfiRect(*map(int, rect)), owner=s)
+    def sparkline(s: Sparkline, rect: RectLike) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Sparkline"], s._handle, _ffi_rect(rect), owner=s)
 
     @staticmethod
-    def chart(c: Chart, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Chart"], c._handle, FfiRect(*map(int, rect)), owner=c)
+    def chart(c: Chart, rect: RectLike) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Chart"], c._handle, _ffi_rect(rect), owner=c)
+
+
+def _ffi_rect(rect: RectLike) -> FfiRect:
+    """Accept either a tuple or a Rect and produce an FfiRect.
+
+    This keeps the external API pythonic while preserving a zero-copy path
+    for the FFI struct construction.
+    """
+    if hasattr(rect, "to_tuple"):
+        x, y, w, h = rect.to_tuple()  # type: ignore[attr-defined]
+        return FfiRect(int(x), int(y), int(w), int(h))
+    x, y, w, h = rect  # type: ignore[misc]
+    return FfiRect(int(x), int(y), int(w), int(h))
