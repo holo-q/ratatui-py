@@ -1,6 +1,7 @@
 import os
 import sys
 import ctypes as C
+from typing import Optional
 from ctypes.util import find_library
 from pathlib import Path
 
@@ -130,9 +131,6 @@ def _default_names():
         return ["libratatui_ffi.so", "ratatui_ffi"]
 
 _cached_lib = None
-
-from typing import Optional
-
 
 def load_library(explicit: Optional[str] = None) -> C.CDLL:
     global _cached_lib
