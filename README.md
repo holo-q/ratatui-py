@@ -201,6 +201,20 @@ with Terminal() as term:
         ...  # move selection
 ```
 
+- Batched frames via a context manager:
+
+```python
+from ratatui_py import Terminal, Paragraph, Rect
+
+with Terminal() as term:
+    p1 = Paragraph.from_text("Left")
+    p2 = Paragraph.from_text("Right")
+    with term.frame() as f:
+        f.paragraph(p1, Rect(0, 0, 20, 3))
+        f.paragraph(p2, Rect(20, 0, 20, 3))
+    # f.ok is True/False depending on `draw_frame`
+```
+
 ## Platform support
 - Linux: `x86_64` is tested; other targets may work with a compatible `ratatui_ffi` build.
 - macOS: Apple Silicon and Intel are supported via `dylib`.

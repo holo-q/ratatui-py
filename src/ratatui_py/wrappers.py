@@ -80,6 +80,10 @@ class Paragraph:
         except Exception:
             pass
 
+    # Context-managed frame builder for ergonomic batched draws
+    def frame(self) -> "Frame":
+        return Frame(self)
+
 class Terminal:
     def __init__(self):
         self._lib = load_library()
@@ -717,3 +721,45 @@ def _ffi_rect(rect: RectLike) -> FfiRect:
         return FfiRect(int(x), int(y), int(w), int(h))
     x, y, w, h = rect  # type: ignore[misc]
     return FfiRect(int(x), int(y), int(w), int(h))
+
+
+class Frame:
+    def __init__(self, term: Terminal):
+        self._term = term
+        self._cmds: _List[DrawCmd] = []
+        self.ok: Optional[bool] = None
+
+    # mirror DrawCmd helpers for convenience
+    def paragraph(self, p: Paragraph, rect: RectLike) -> None:
+        self._cmds.append(DrawCmd.paragraph(p, rect))
+
+    def list(self, lst: "List", rect: RectLike) -> None:
+        self._cmds.append(DrawCmd.list(lst, rect))
+
+    def table(self, t: "Table", rect: RectLike) -> None:
+        self._cmds.append(DrawCmd.table(t, rect))
+
+    def gauge(self, g: "Gauge", rect: RectLike) -> None:
+        self._cmds.append(DrawCmd.gauge(g, rect))
+
+    def tabs(self, t: "Tabs", rect: RectLike) -> None:
+        self._cmds.append(DrawCmd.tabs(t, rect))
+
+    def barchart(self, b: "BarChart", rect: RectLike) -> None:
+        self._cmds.append(DrawCmd.barchart(b, rect))
+
+    def sparkline(self, s: "Sparkline", rect: RectLike) -> None:
+        self._cmds.append(DrawCmd.sparkline(s, rect))
+
+    def chart(self, c: "Chart", rect: RectLike) -> None:
+        self._cmds.append(DrawCmd.chart(c, rect))
+
+    def extend(self, cmds: Sequence[DrawCmd]) -> None:
+        self._cmds.extend(cmds)
+
+    def __enter__(self) -> "Frame":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        if exc_type is None:
+            self.ok = self._term.draw_frame(self._cmds)
