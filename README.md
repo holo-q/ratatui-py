@@ -17,7 +17,7 @@ Order of strategies (first that works is used):
 
 The resulting shared library is packaged at `ratatui_py/_bundled/` and loaded automatically at runtime.
 
-## Example
+## Examples
 
 ```python
 from ratatui_py import Terminal, Paragraph
@@ -26,6 +26,32 @@ with Terminal() as term:
     p = Paragraph.from_text("Hello from Python!\nThis is ratatui.")
     p.set_block_title("Demo", show_border=True)
     term.draw_paragraph(p)
+```
+
+List + Table + Gauge
+
+```python
+from ratatui_py import Terminal, List, Table, Gauge, Style, FFI_COLOR
+
+with Terminal() as term:
+    lst = List()
+    for i in range(5):
+        lst.append_item(f"Item {i}")
+    lst.set_selected(2)
+    lst.set_block_title("List", True)
+
+    tbl = Table()
+    tbl.set_headers(["A", "B", "C"])
+    tbl.append_row(["1", "2", "3"])
+    tbl.append_row(["x", "y", "z"])
+    tbl.set_block_title("Table", True)
+
+    g = Gauge().ratio(0.42).label("42%")
+    g.set_block_title("Gauge", True)
+
+    term.draw_list(lst, (0,0,20,6))
+    term.draw_table(tbl, (0,6,20,6))
+    term.draw_gauge(g, (0,12,20,3))
 ```
 
 ## Env Vars

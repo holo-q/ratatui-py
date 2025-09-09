@@ -1,7 +1,7 @@
 from __future__ import annotations
 import ctypes as C
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterable, Sequence
 
 from ._ffi import (
     load_library,
@@ -10,6 +10,10 @@ from ._ffi import (
     FfiEvent,
     FFI_EVENT_KIND,
     FFI_COLOR,
+    FFI_KEY_CODE,
+    FFI_KEY_MODS,
+    FFI_MOUSE_KIND,
+    FFI_MOUSE_BUTTON,
 )
 
 @dataclass
@@ -71,6 +75,30 @@ class Terminal:
             return bool(self._lib.ratatui_terminal_draw_paragraph(self._handle, p._handle))
         r = FfiRect(*map(int, rect))
         return bool(self._lib.ratatui_terminal_draw_paragraph_in(self._handle, p._handle, r))
+
+    def draw_list(self, lst: "List", rect: Tuple[int,int,int,int]) -> bool:
+        r = FfiRect(*map(int, rect))
+        return bool(self._lib.ratatui_terminal_draw_list_in(self._handle, lst._handle, r))
+
+    def draw_table(self, tbl: "Table", rect: Tuple[int,int,int,int]) -> bool:
+        r = FfiRect(*map(int, rect))
+        return bool(self._lib.ratatui_terminal_draw_table_in(self._handle, tbl._handle, r))
+
+    def draw_gauge(self, g: "Gauge", rect: Tuple[int,int,int,int]) -> bool:
+        r = FfiRect(*map(int, rect))
+        return bool(self._lib.ratatui_terminal_draw_gauge_in(self._handle, g._handle, r))
+
+    def draw_tabs(self, t: "Tabs", rect: Tuple[int,int,int,int]) -> bool:
+        r = FfiRect(*map(int, rect))
+        return bool(self._lib.ratatui_terminal_draw_tabs_in(self._handle, t._handle, r))
+
+    def draw_barchart(self, b: "BarChart", rect: Tuple[int,int,int,int]) -> bool:
+        r = FfiRect(*map(int, rect))
+        return bool(self._lib.ratatui_terminal_draw_barchart_in(self._handle, b._handle, r))
+
+    def draw_sparkline(self, s: "Sparkline", rect: Tuple[int,int,int,int]) -> bool:
+        r = FfiRect(*map(int, rect))
+        return bool(self._lib.ratatui_terminal_draw_sparkline_in(self._handle, s._handle, r))
 
     def size(self) -> Tuple[int, int]:
         w = C.c_uint16(0)
@@ -135,3 +163,306 @@ def headless_render_paragraph(width: int, height: int, p: Paragraph) -> str:
     finally:
         lib.ratatui_string_free(out)
     return s
+
+
+class List:
+    def __init__(self):
+        self._lib = load_library()
+        ptr = self._lib.ratatui_list_new()
+        if not ptr:
+            raise RuntimeError("ratatui_list_new failed")
+        self._handle = C.c_void_p(ptr)
+
+    def append_item(self, text: str, style: Optional[Style] = None) -> None:
+        st = (style or Style()).to_ffi()
+        self._lib.ratatui_list_append_item(self._handle, text.encode("utf-8"), st)
+
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
+        t = title.encode("utf-8") if title is not None else None
+        self._lib.ratatui_list_set_block_title(self._handle, t, bool(show_border))
+
+    def set_selected(self, idx: Optional[int]) -> None:
+        self._lib.ratatui_list_set_selected(self._handle, -1 if idx is None else int(idx))
+
+    def set_highlight_style(self, style: Style) -> None:
+        self._lib.ratatui_list_set_highlight_style(self._handle, style.to_ffi())
+
+    def set_highlight_symbol(self, sym: Optional[str]) -> None:
+        s = None if sym is None else sym.encode("utf-8")
+        self._lib.ratatui_list_set_highlight_symbol(self._handle, s)
+
+    def close(self) -> None:
+        if getattr(self, "_handle", None):
+            self._lib.ratatui_list_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+class Table:
+    def __init__(self):
+        self._lib = load_library()
+        ptr = self._lib.ratatui_table_new()
+        if not ptr:
+            raise RuntimeError("ratatui_table_new failed")
+        self._handle = C.c_void_p(ptr)
+
+    def set_headers(self, headers: Sequence[str]) -> None:
+        tsv = "\t".join(headers).encode("utf-8")
+        self._lib.ratatui_table_set_headers(self._handle, tsv)
+
+    def append_row(self, row: Sequence[str]) -> None:
+        tsv = "\t".join(row).encode("utf-8")
+        self._lib.ratatui_table_append_row(self._handle, tsv)
+
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
+        t = title.encode("utf-8") if title is not None else None
+        self._lib.ratatui_table_set_block_title(self._handle, t, bool(show_border))
+
+    def set_selected(self, idx: Optional[int]) -> None:
+        self._lib.ratatui_table_set_selected(self._handle, -1 if idx is None else int(idx))
+
+    def set_row_highlight_style(self, style: Style) -> None:
+        self._lib.ratatui_table_set_row_highlight_style(self._handle, style.to_ffi())
+
+    def set_highlight_symbol(self, sym: Optional[str]) -> None:
+        s = None if sym is None else sym.encode("utf-8")
+        self._lib.ratatui_table_set_highlight_symbol(self._handle, s)
+
+    def close(self) -> None:
+        if getattr(self, "_handle", None):
+            self._lib.ratatui_table_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+class Gauge:
+    def __init__(self):
+        self._lib = load_library()
+        ptr = self._lib.ratatui_gauge_new()
+        if not ptr:
+            raise RuntimeError("ratatui_gauge_new failed")
+        self._handle = C.c_void_p(ptr)
+
+    def ratio(self, value: float) -> "Gauge":
+        self._lib.ratatui_gauge_set_ratio(self._handle, float(value))
+        return self
+
+    def label(self, text: Optional[str]) -> "Gauge":
+        t = text.encode("utf-8") if text is not None else None
+        self._lib.ratatui_gauge_set_label(self._handle, t)
+        return self
+
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
+        t = title.encode("utf-8") if title is not None else None
+        self._lib.ratatui_gauge_set_block_title(self._handle, t, bool(show_border))
+
+    def close(self) -> None:
+        if getattr(self, "_handle", None):
+            self._lib.ratatui_gauge_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+class Tabs:
+    def __init__(self):
+        self._lib = load_library()
+        ptr = self._lib.ratatui_tabs_new()
+        if not ptr:
+            raise RuntimeError("ratatui_tabs_new failed")
+        self._handle = C.c_void_p(ptr)
+
+    def set_titles(self, titles: Sequence[str]) -> None:
+        tsv = "\t".join(titles).encode("utf-8")
+        self._lib.ratatui_tabs_set_titles(self._handle, tsv)
+
+    def set_selected(self, idx: int) -> None:
+        self._lib.ratatui_tabs_set_selected(self._handle, int(idx))
+
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
+        t = title.encode("utf-8") if title is not None else None
+        self._lib.ratatui_tabs_set_block_title(self._handle, t, bool(show_border))
+
+    def close(self) -> None:
+        if getattr(self, "_handle", None):
+            self._lib.ratatui_tabs_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+class BarChart:
+    def __init__(self):
+        self._lib = load_library()
+        ptr = self._lib.ratatui_barchart_new()
+        if not ptr:
+            raise RuntimeError("ratatui_barchart_new failed")
+        self._handle = C.c_void_p(ptr)
+
+    def set_values(self, values: Iterable[int]) -> None:
+        arr = (C.c_uint64 * len(list(values)))(*list(values))
+        self._lib.ratatui_barchart_set_values(self._handle, arr, len(arr))
+
+    def set_labels(self, labels: Sequence[str]) -> None:
+        tsv = "\t".join(labels).encode("utf-8")
+        self._lib.ratatui_barchart_set_labels(self._handle, tsv)
+
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
+        t = title.encode("utf-8") if title is not None else None
+        self._lib.ratatui_barchart_set_block_title(self._handle, t, bool(show_border))
+
+    def close(self) -> None:
+        if getattr(self, "_handle", None):
+            self._lib.ratatui_barchart_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+class Sparkline:
+    def __init__(self):
+        self._lib = load_library()
+        ptr = self._lib.ratatui_sparkline_new()
+        if not ptr:
+            raise RuntimeError("ratatui_sparkline_new failed")
+        self._handle = C.c_void_p(ptr)
+
+    def set_values(self, values: Iterable[int]) -> None:
+        arr = (C.c_uint64 * len(list(values)))(*list(values))
+        self._lib.ratatui_sparkline_set_values(self._handle, arr, len(arr))
+
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
+        t = title.encode("utf-8") if title is not None else None
+        self._lib.ratatui_sparkline_set_block_title(self._handle, t, bool(show_border))
+
+    def close(self) -> None:
+        if getattr(self, "_handle", None):
+            self._lib.ratatui_sparkline_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+# Optional Scrollbar (only if built with feature)
+class Scrollbar:
+    def __init__(self):
+        self._lib = load_library()
+        if not hasattr(self._lib, 'ratatui_scrollbar_new'):
+            raise RuntimeError("ratatui_ffi built without 'scrollbar' feature")
+        ptr = self._lib.ratatui_scrollbar_new()
+        if not ptr:
+            raise RuntimeError("ratatui_scrollbar_new failed")
+        self._handle = C.c_void_p(ptr)
+
+    def configure(self, orient: str, position: int, content_len: int, viewport_len: int) -> None:
+        o = 0 if orient.lower().startswith('v') else 1
+        self._lib.ratatui_scrollbar_configure(self._handle, o, int(position), int(content_len), int(viewport_len))
+
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
+        t = title.encode("utf-8") if title is not None else None
+        self._lib.ratatui_scrollbar_set_block_title(self._handle, t, bool(show_border))
+
+    def close(self) -> None:
+        if getattr(self, "_handle", None):
+            self._lib.ratatui_scrollbar_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+# Headless helpers for other widgets
+def headless_render_list(width: int, height: int, lst: List) -> str:
+    lib = lst._lib
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_list(C.c_uint16(width), C.c_uint16(height), lst._handle, C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        lib.ratatui_string_free(out)
+
+def headless_render_table(width: int, height: int, tbl: Table) -> str:
+    lib = tbl._lib
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_table(C.c_uint16(width), C.c_uint16(height), tbl._handle, C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        lib.ratatui_string_free(out)
+
+def headless_render_gauge(width: int, height: int, g: Gauge) -> str:
+    lib = g._lib
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_gauge(C.c_uint16(width), C.c_uint16(height), g._handle, C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        lib.ratatui_string_free(out)
+
+def headless_render_tabs(width: int, height: int, t: Tabs) -> str:
+    lib = t._lib
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_tabs(C.c_uint16(width), C.c_uint16(height), t._handle, C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        lib.ratatui_string_free(out)
+
+def headless_render_barchart(width: int, height: int, b: BarChart) -> str:
+    lib = b._lib
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_barchart(C.c_uint16(width), C.c_uint16(height), b._handle, C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        lib.ratatui_string_free(out)
+
+def headless_render_sparkline(width: int, height: int, s: Sparkline) -> str:
+    lib = s._lib
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_sparkline(C.c_uint16(width), C.c_uint16(height), s._handle, C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        lib.ratatui_string_free(out)
