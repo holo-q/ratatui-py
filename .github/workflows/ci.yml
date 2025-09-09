@@ -29,6 +29,7 @@ jobs:
       - name: Build/bundle ratatui_ffi for tests
         env:
           RATATUI_FFI_TAG: v0.1.5
+          RATATUI_FFI_PROFILE: release
         run: |
           python - << 'PY'
           from ratatui_py._bootstrap import ensure_runtime_lib
@@ -49,6 +50,11 @@ print('ratatui_ffi.dll' if sys.platform.startswith('win') else ('libratatui_ffi.
 PY
 )" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=$LIBDIR:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+      - name: Show bundled library info
+        run: |
+          echo "RATATUI_FFI_LIB=$RATATUI_FFI_LIB"
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+          ls -lah $(dirname "$RATATUI_FFI_LIB") || true
       - name: Lint (src only)
         run: ruff check src
         continue-on-error: true
@@ -56,4 +62,7 @@ PY
       # - name: Type check
       #   run: mypy src
       - name: Tests
-        run: pytest -q
+        env:
+          RATATUI_FFI_LIB: ${{ env.RATATUI_FFI_LIB }}
+          LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
+        run: pytest -q -vv
