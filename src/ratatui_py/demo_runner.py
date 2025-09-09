@@ -12,6 +12,7 @@ from . import (
     Chart as UiChart,
     Style,
     FFI_COLOR,
+    DrawCmd,
 )
 from . import examples as ex
 
@@ -27,8 +28,8 @@ class DemoBase:
     def tick(self, dt: float) -> None:
         pass
 
-    def render(self, term: Terminal, rect: Tuple[int, int, int, int]) -> None:
-        pass
+    def render_cmds(self, rect: Tuple[int, int, int, int]) -> list:
+        return []
 
 
 class HelloDemo(DemoBase):
@@ -36,13 +37,13 @@ class HelloDemo(DemoBase):
     desc = "Basic paragraph + help"
     source_obj = ex.hello_main
 
-    def render(self, term: Terminal, rect: Tuple[int, int, int, int]) -> None:
+    def render_cmds(self, rect: Tuple[int, int, int, int]) -> list:
         p = Paragraph.from_text(
             "Hello from Python!\nThis is ratatui.\n\n" \
             "Press Tab to switch demos, q to quit.\n"
         )
         p.set_block_title("Hello", True)
-        term.draw_paragraph(p, rect)
+        return [DrawCmd.paragraph(p, rect)]
 
 
 class WidgetsDemo(DemoBase):
@@ -61,17 +62,18 @@ class WidgetsDemo(DemoBase):
         self.tbl.append_row(["x", "y", "z"])
         self.g = UiGauge().ratio(0.42).label("42%")
 
-    def render(self, term: Terminal, rect: Tuple[int, int, int, int]) -> None:
+    def render_cmds(self, rect: Tuple[int, int, int, int]) -> list:
         x, y, w, h = rect
         h1 = max(3, h // 3)
         h2 = max(3, h // 3)
         h3 = max(1, h - h1 - h2)
         self.lst.set_block_title("List", True)
-        term.draw_list(self.lst, (x, y, w, h1))
+        c1 = DrawCmd.list(self.lst, (x, y, w, h1))
         self.tbl.set_block_title("Table", True)
-        term.draw_table(self.tbl, (x, y + h1, w, h2))
+        c2 = DrawCmd.table(self.tbl, (x, y + h1, w, h2))
         self.g.set_block_title("Gauge", True)
-        term.draw_gauge(self.g, (x, y + h1 + h2, w, h3))
+        c3 = DrawCmd.gauge(self.g, (x, y + h1 + h2, w, h3))
+        return [c1, c2, c3]
 
 
 class LifeDemo(DemoBase):
@@ -115,14 +117,14 @@ class LifeDemo(DemoBase):
             self.grid = ex._step(self.grid) if self.grid else self.grid
             self._acc = 0.0
 
-    def render(self, term: Terminal, rect: Tuple[int, int, int, int]) -> None:
+    def render_cmds(self, rect: Tuple[int, int, int, int]) -> list:
         x, y, w, h = rect
         self._ensure(w, h - 2 if h > 2 else h)
         text = ex._render_text(self.grid)
         hints = "\n[q]uit [Tab] next [p]ause [+/-] speed [r]andomize"
         p = Paragraph.from_text(text + hints)
         p.set_block_title("Conway's Life", True)
-        term.draw_paragraph(p, rect)
+        return [DrawCmd.paragraph(p, rect)]
 
 
 def _load_source(obj) -> str:
@@ -158,20 +160,33 @@ def run_demo_hub() -> None:
 
             width, height = term.size()
             # layout: left demo area, right code pane
-            code_w = max(20, int(width * 0.42))
-            demo_w = max(10, width - code_w)
+            # keep at least 10 cols for demo; clamp code width
+            min_demo = 10
+            code_w_target = max(20, int(width * 0.42))
+            code_w_max = max(0, width - min_demo)
+            code_w = min(code_w_target, code_w_max)
+            demo_w = max(min_demo, width - code_w)
             demo_rect = (0, 0, demo_w, height)
             code_rect = (demo_w, 0, code_w, height)
 
             demo = demos[idx]
             demo.tick(dt)
 
-            # draw demo
-            demo.render(term, demo_rect)
-
-            # draw code pane
+            # assemble frame draw commands
+            cmds = []
             src = _load_source(demo.source_obj)
-            _render_code(term, code_rect, f"{demo.name} – Source", src, code_scroll)
+            # render code pane as a paragraph command first
+            code_lines = src.splitlines()
+            vis = code_lines[code_scroll:]
+            code_text = "\n".join(vis)
+            pcode = Paragraph.from_text(code_text)
+            pcode.set_block_title(f"{demo.name} – Source", True)
+            cmds.append(DrawCmd.paragraph(pcode, code_rect))
+            # then the demo, in case of any overlap it stays on top
+            cmds.extend(demo.render_cmds(demo_rect))
+
+            # draw once for the whole frame
+            term.draw_frame(cmds)
 
             # input handling
             evt = term.next_event(50)
@@ -203,4 +218,3 @@ def run_demo_hub() -> None:
 
 if __name__ == "__main__":
     run_demo_hub()
-

@@ -7,6 +7,7 @@ examples/hello_paragraph.py
 src/ratatui_py/__init__.py
 src/ratatui_py/__main__.py
 src/ratatui_py/_ffi.py
+src/ratatui_py/demo_runner.py
 src/ratatui_py/examples.py
 src/ratatui_py/wrappers.py
 src/ratatui_py.egg-info/PKG-INFO

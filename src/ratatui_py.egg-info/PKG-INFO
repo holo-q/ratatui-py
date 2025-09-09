@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: ratatui-py
-Version: 0.2.3
+Version: 0.3.1
 Summary: Python bindings for ratatui_ffi (Ratatui C ABI) via ctypes
 Author: holo-q
 Project-URL: Homepage, https://github.com/holo-q/ratatui-py
