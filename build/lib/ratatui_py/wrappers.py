@@ -1,7 +1,8 @@
 from __future__ import annotations
 import ctypes as C
 from dataclasses import dataclass
-from typing import Optional, Tuple, Iterable, Sequence, List as _List
+from typing import Optional, Tuple, Iterable, Sequence, Callable, Any, List as _List
+from time import monotonic
 
 from ._ffi import (
     load_library,
@@ -162,6 +163,78 @@ class Terminal:
             self.close()
         except Exception:
             pass
+
+
+class App:
+    """Minimal app runner to simplify event loops.
+
+    Example:
+        def render(term: Terminal, state: dict) -> None:
+            w, h = term.size()
+            p = Paragraph.from_text("Hello ratatui-py!\nPress q to quit.")
+            p.set_block_title("Demo", True)
+            term.draw_paragraph(p, (0, 0, w, h))
+
+        def on_event(term: Terminal, evt: dict, state: dict) -> bool:
+            if evt.get("kind") == "key" and evt.get("ch") in (ord('q'), ord('Q')):
+                return False  # stop
+            return True
+
+        App(render=render, on_event=on_event, tick_ms=250).run({})
+
+    """
+
+    def __init__(
+        self,
+        *,
+        render: Callable[["Terminal", Any], None],
+        on_event: Optional[Callable[["Terminal", dict, Any], bool]] = None,
+        on_tick: Optional[Callable[["Terminal", Any], None]] = None,
+        on_start: Optional[Callable[["Terminal", Any], None]] = None,
+        on_stop: Optional[Callable[[Optional[BaseException], "Terminal", Any], None]] = None,
+        tick_ms: int = 100,
+        clear_each_frame: bool = False,
+    ) -> None:
+        self.render = render
+        self.on_event = on_event
+        self.on_tick = on_tick
+        self.on_start = on_start
+        self.on_stop = on_stop
+        self.tick_ms = int(tick_ms)
+        self.clear_each_frame = bool(clear_each_frame)
+
+    def run(self, state: Any = None) -> None:
+        with Terminal() as term:
+            if self.on_start:
+                self.on_start(term, state)
+            last_tick = monotonic()
+            try:
+                running = True
+                while running:
+                    if self.clear_each_frame:
+                        term.clear()
+                    self.render(term, state)
+                    now = monotonic()
+                    # Budget remaining time for event wait so ticks are paced.
+                    elapsed_ms = int((now - last_tick) * 1000)
+                    wait_ms = max(0, self.tick_ms - elapsed_ms)
+                    evt = term.next_event(wait_ms)
+                    if evt is not None and self.on_event is not None:
+                        keep_going = self.on_event(term, evt, state)
+                        if keep_going is False:
+                            break
+                    now2 = monotonic()
+                    if (now2 - last_tick) * 1000 >= self.tick_ms:
+                        if self.on_tick is not None:
+                            self.on_tick(term, state)
+                        last_tick = now2
+            except BaseException as e:
+                if self.on_stop:
+                    self.on_stop(e, term, state)
+                raise
+            else:
+                if self.on_stop:
+                    self.on_stop(None, term, state)
 
 # Convenience: headless render paragraph
 

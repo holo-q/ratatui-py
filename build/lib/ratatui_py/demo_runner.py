@@ -1,5 +1,4 @@
 from __future__ import annotations
-import os
 import time
 import inspect
 from typing import Optional, Tuple, List
@@ -291,11 +290,6 @@ def _render_code(term: Terminal, rect: Tuple[int, int, int, int], title: str, co
 
 
 def run_demo_hub() -> None:
-    # Dev-friendly defaults so `uv run ratatui-py-demos` always shows rich diagnostics
-    os.environ.setdefault("RUST_BACKTRACE", "full")
-    os.environ.setdefault("RATATUI_FFI_TRACE", "1")
-    os.environ.setdefault("RATATUI_FFI_NO_ALTSCR", "1")
-    os.environ.setdefault("RATATUI_FFI_PROFILE", "debug")
     demos: List[DemoBase] = [HelloDemo(), WidgetsDemo(), LifeDemo(), DashboardDemo()]
     idx = 0
     code_scroll = 0
