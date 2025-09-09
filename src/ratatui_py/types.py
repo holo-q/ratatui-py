@@ -54,6 +54,42 @@ class Rect:
     def bottom(self) -> int:
         return int(self.y + self.height)
 
+    # Fluent geometry helpers (pythonic alternative to layout module)
+    def margin(self, *, all: Optional[int] = None, x: int = 0, y: int = 0) -> "Rect":
+        if all is not None:
+            x = y = int(all)
+        nx = self.x + x
+        ny = self.y + y
+        nw = max(0, self.width - 2 * x)
+        nh = max(0, self.height - 2 * y)
+        return Rect(nx, ny, nw, nh)
+
+    def split_h(self, *fractions: float, gap: int = 0) -> tuple["Rect", ...]:
+        x, y, w, h = self.to_tuple()
+        total_gap = max(0, (len(fractions) - 1) * gap)
+        avail = max(0, h - total_gap)
+        fr_sum = sum(fractions) or 1.0
+        rows: list[Rect] = []
+        yy = y
+        for i, f in enumerate(fractions):
+            hh = int(round(avail * (f / fr_sum))) if i < len(fractions) - 1 else (y + h - yy)
+            rows.append(Rect(x, yy, w, max(0, hh)))
+            yy += hh + (gap if i < len(fractions) - 1 else 0)
+        return tuple(rows)
+
+    def split_v(self, *fractions: float, gap: int = 0) -> tuple["Rect", ...]:
+        x, y, w, h = self.to_tuple()
+        total_gap = max(0, (len(fractions) - 1) * gap)
+        avail = max(0, w - total_gap)
+        fr_sum = sum(fractions) or 1.0
+        cols: list[Rect] = []
+        xx = x
+        for i, f in enumerate(fractions):
+            ww = int(round(avail * (f / fr_sum))) if i < len(fractions) - 1 else (x + w - xx)
+            cols.append(Rect(xx, y, max(0, ww), h))
+            xx += ww + (gap if i < len(fractions) - 1 else 0)
+        return tuple(cols)
+
 
 RectLike: TypeAlias = Union[Rect, Tuple[int, int, int, int]]
 
@@ -128,6 +164,20 @@ class KeyMods(enum.IntFlag):
     CTRL = 1 << 2
 
 
+class Mod(enum.IntFlag):
+    """Text style modifiers for Style.mods (aligned with Ratatui Modifier bits)."""
+    NONE = 0
+    BOLD = 1 << 0
+    DIM = 1 << 1
+    ITALIC = 1 << 2
+    UNDERLINED = 1 << 3
+    SLOW_BLINK = 1 << 4
+    RAPID_BLINK = 1 << 5
+    REVERSED = 1 << 6
+    HIDDEN = 1 << 7
+    CROSSED_OUT = 1 << 8
+
+
 class MouseKind(enum.IntEnum):
     Down = 1
     Up = 2
@@ -175,6 +225,7 @@ __all__ += [
     "Color",
     "KeyCode",
     "KeyMods",
+    "Mod",
     "MouseKind",
     "MouseButton",
     "KeyEvt",

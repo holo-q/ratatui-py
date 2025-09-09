@@ -38,6 +38,9 @@ from .wrappers import (
 )
 from .layout import margin, split_h, split_v, margin_rect, split_h_rect, split_v_rect
 from .util import frame_begin, BackgroundTask, ProcessTask
+from .input import Keymap
+from .types import Mod
+from .prelude import *  # re-export convenience prelude
 from .types import (
     Rect, RectLike, Point, Size,
     Color, KeyCode, KeyMods, MouseKind, MouseButton,
@@ -84,6 +87,8 @@ __all__ = [
     "ResizeEvt",
     "MouseEvt",
     "Event",
+    "Mod",
+    "Keymap",
     "headless_render_paragraph",
     "headless_render_list",
     "headless_render_table",

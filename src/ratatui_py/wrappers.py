@@ -18,7 +18,7 @@ from ._ffi import (
     FFI_MOUSE_BUTTON,
     FFI_WIDGET_KIND,
 )
-from .types import RectLike, Color, KeyCode, KeyMods, MouseKind, MouseButton
+from .types import RectLike, Color, KeyCode, KeyMods, MouseKind, MouseButton, Mod
 
 @dataclass
 class Style:
@@ -30,6 +30,37 @@ class Style:
         fg = int(self.fg) if isinstance(self.fg, enum.IntEnum) else int(self.fg)
         bg = int(self.bg) if isinstance(self.bg, enum.IntEnum) else int(self.bg)
         return FfiStyle(fg, bg, int(self.mods))
+
+    # Fluent helpers (return a new Style for chaining)
+    def with_fg(self, fg: Union[int, enum.IntEnum]) -> "Style":
+        return Style(fg=fg, bg=self.bg, mods=self.mods)
+
+    def with_bg(self, bg: Union[int, enum.IntEnum]) -> "Style":
+        return Style(fg=self.fg, bg=bg, mods=self.mods)
+
+    def with_mods(self, mods: int | Mod) -> "Style":
+        return Style(fg=self.fg, bg=self.bg, mods=int(mods))
+
+    def add_mods(self, mods: int | Mod) -> "Style":
+        return Style(fg=self.fg, bg=self.bg, mods=(int(self.mods) | int(mods)))
+
+    def bold(self) -> "Style":
+        return self.add_mods(Mod.BOLD)
+
+    def italic(self) -> "Style":
+        return self.add_mods(Mod.ITALIC)
+
+    def underlined(self) -> "Style":
+        return self.add_mods(Mod.UNDERLINED)
+
+    def reversed(self) -> "Style":
+        return self.add_mods(Mod.REVERSED)
+
+    def dim(self) -> "Style":
+        return self.add_mods(Mod.DIM)
+
+    def crossed_out(self) -> "Style":
+        return self.add_mods(Mod.CROSSED_OUT)
 
 class Paragraph:
     def __init__(self, handle: int, lib=None):
