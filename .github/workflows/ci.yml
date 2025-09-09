@@ -55,6 +55,13 @@ PY
           echo "RATATUI_FFI_LIB=$RATATUI_FFI_LIB"
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           ls -lah $(dirname "$RATATUI_FFI_LIB") || true
+          python - << 'PY'
+import os, sys, pathlib
+p = os.environ.get('RATATUI_FFI_LIB')
+print('Exists:', p, os.path.exists(p))
+pkg = pathlib.Path('src/ratatui_py/_bundled')
+print('Bundled dir exists:', pkg, pkg.exists(), 'contents:', list(pkg.iterdir()) if pkg.exists() else [])
+PY
       - name: Lint (src only)
         run: ruff check src
         continue-on-error: true
@@ -65,4 +72,5 @@ PY
         env:
           RATATUI_FFI_LIB: ${{ env.RATATUI_FFI_LIB }}
           LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
+          PYTHONPATH: ${{ github.workspace }}/src
         run: pytest -q -vv
