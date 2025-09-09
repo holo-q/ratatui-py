@@ -37,9 +37,13 @@ def copy_lib_to_bundle(path: Path) -> None:
 
 def build_from_src(src_path: Path) -> Path:
     # Build the Rust cdylib via cargo in the provided repository path
-    print(f"Building ratatui_ffi from source at {src_path}...")
-    subprocess.check_call(["cargo", "build", "--release"], cwd=src_path)
-    target = src_path / "target" / "release" / plat_lib_name()
+    profile = os.environ.get("RATATUI_FFI_PROFILE", "release").lower()
+    if profile not in ("release", "debug"):
+        profile = "release"
+    print(f"Building ratatui_ffi from {src_path} (profile={profile})…")
+    args = ["cargo", "build"] + ([] if profile == "debug" else ["--release"])
+    subprocess.check_call(args, cwd=src_path)
+    target = src_path / "target" / ("debug" if profile == "debug" else "release") / plat_lib_name()
     if not target.exists():
         raise FileNotFoundError(f"Built library not found: {target}")
     return target

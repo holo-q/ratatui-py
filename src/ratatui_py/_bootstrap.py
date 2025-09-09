@@ -22,8 +22,12 @@ def _copy(src: Path, dst: Path) -> None:
 
 
 def _build_from_src(src: Path) -> Path:
-    subprocess.check_call(["cargo", "build", "--release"], cwd=src)
-    out = src / "target" / "release" / _plat_lib_name()
+    profile = os.getenv("RATATUI_FFI_PROFILE", "release").lower()
+    if profile not in ("debug", "release"):
+        profile = "release"
+    args = ["cargo", "build"] + ([] if profile == "debug" else ["--release"])
+    subprocess.check_call(args, cwd=src)
+    out = src / "target" / ("debug" if profile == "debug" else "release") / _plat_lib_name()
     if not out.exists():
         raise FileNotFoundError(out)
     return out
@@ -65,4 +69,3 @@ def ensure_runtime_lib() -> None:
     except Exception:
         # Leave as-is; loader may still find a system lib
         return
-
