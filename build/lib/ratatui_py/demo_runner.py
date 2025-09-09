@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import time
 import inspect
 from typing import Optional, Tuple, List
@@ -290,7 +291,26 @@ def _render_code(term: Terminal, rect: Tuple[int, int, int, int], title: str, co
 
 
 def run_demo_hub() -> None:
-    demos: List[DemoBase] = [HelloDemo(), WidgetsDemo(), LifeDemo(), DashboardDemo()]
+    # Enable diagnostics only when explicitly requested
+    if os.getenv("RATATUI_PY_DEBUG"):
+        os.environ.setdefault("RUST_BACKTRACE", "full")
+        os.environ.setdefault("RATATUI_FFI_TRACE", "1")
+        os.environ.setdefault("RATATUI_FFI_NO_ALTSCR", "1")
+        os.environ.setdefault("RATATUI_FFI_PROFILE", "debug")
+        os.environ.setdefault("RATATUI_FFI_LOG", str((__import__('pathlib').Path('.').resolve() / 'ratatui_ffi.log')))
+    demos: List[DemoBase] = [
+        HelloDemo(),
+        WidgetsDemo(),
+        LifeDemo(),
+        DashboardDemo(),
+        ChartPlaygroundDemo(),
+        SpectrumAnalyzerDemo(),
+        LogViewerDemo(),
+        MarkdownViewerDemo(),
+        FileManagerDemo(),
+        ChatDemo(),
+        PlasmaDemo(),
+    ]
     idx = 0
     code_scroll = 0
     last = time.monotonic()
@@ -322,12 +342,16 @@ def run_demo_hub() -> None:
             pcode = Paragraph.from_text(code_text)
             pcode.set_block_title(f"{demo.name} – Source", True)
 
-            # Composite both panes in a single frame
-            cmds = [DrawCmd.paragraph(pcode, code_rect)]
-            cmds.extend(demo.render_cmds(demo_rect))
-            ok = term.draw_frame(cmds)
-            if not ok:
-                # As a last resort, draw demo only so at least something shows
+            # If the demo provides batched commands, render both panes in one frame.
+            # Otherwise, draw code first and let the demo render itself.
+            demo_cmds = demo.render_cmds(demo_rect)
+            if demo_cmds:
+                cmds = [DrawCmd.paragraph(pcode, code_rect)] + demo_cmds
+                ok = term.draw_frame(cmds)
+                if not ok:
+                    demo.render(term, demo_rect)
+            else:
+                term.draw_paragraph(pcode, code_rect)
                 demo.render(term, demo_rect)
 
             # input handling
@@ -382,3 +406,401 @@ def run_dashboard() -> None:
 
 # Link demo source for code pane
 DashboardDemo.source_obj = run_dashboard
+
+
+class ChartPlaygroundDemo(DemoBase):
+    name = "Charts"
+    desc = "Interactive line charts"
+    source_obj = None
+
+    def __init__(self) -> None:
+        self.t = 0.0
+        self.zoom = 1.0
+        self.speed = 1.0
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key":
+            return
+        ch = evt.get("ch", 0)
+        if not ch:
+            return
+        c = chr(ch).lower()
+        if c == '+':
+            self.zoom = min(4.0, self.zoom * 1.25)
+        elif c == '-':
+            self.zoom = max(0.25, self.zoom * 0.8)
+        elif c == 'f':
+            self.speed = min(8.0, self.speed * 1.4)
+        elif c == 's':
+            self.speed = max(0.125, self.speed * 0.7)
+
+    def tick(self, dt: float) -> None:
+        self.t += dt * self.speed
+
+    def render(self, term: Terminal, rect: Tuple[int,int,int,int]) -> None:
+        x, y, w, h = rect
+        from . import Chart, Style, FFI_COLOR
+        ch = Chart()
+        n = max(20, w - 4)
+        pts1 = []
+        pts2 = []
+        import math
+        for i in range(n):
+            tx = (i / n) * (8.0 / self.zoom)
+            pts1.append((tx, math.sin(tx + self.t)))
+            pts2.append((tx, math.cos(tx * 1.2 + self.t*0.8)))
+        ch.add_line("sin", pts1, Style(fg=FFI_COLOR["LightCyan"]))
+        ch.add_line("cos", pts2, Style(fg=FFI_COLOR["LightMagenta"]))
+        ch.set_axes_titles("t", "val")
+        ch.set_block_title("Chart Playground [+/- zoom, f/s speed, q quit]", True)
+        term.draw_chart(ch, rect)
+
+
+class LogViewerDemo(DemoBase):
+    name = "Logs"
+    desc = "Streaming log viewer with search"
+    source_obj = None
+
+    def __init__(self) -> None:
+        from . import List
+        self.lst = List()
+        self.sel = None
+        self.buf: list[str] = []
+        self.q = ""
+        self.t = 0.0
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key":
+            return
+        ch = evt.get("ch", 0)
+        if not ch:
+            return
+        c = chr(ch)
+        if c == '\b' or ord(c) == 127:
+            self.q = self.q[:-1]
+        elif c == '\n':
+            pass
+        elif c.isprintable():
+            self.q += c
+
+    def tick(self, dt: float) -> None:
+        self.t += dt
+        import random
+        if self.t >= 0.1:
+            self.t = 0.0
+            lvl = random.choice(["INFO", "WARN", "DEBUG", "ERROR"]) 
+            msg = random.choice(["started", "connected", "timeout", "retry", "ok"]) 
+            line = f"{lvl} service={random.randint(1,4)} msg={msg} id={random.randint(1000,9999)}"
+            self.buf.append(line)
+            if len(self.buf) > 500:
+                self.buf.pop(0)
+
+    def render(self, term: Terminal, rect: Tuple[int,int,int,int]) -> None:
+        from . import Style, FFI_COLOR
+        x, y, w, h = rect
+        top, bot = split_h(rect, 1.0, 3.0, gap=1)
+        # filter
+        rows = [s for s in self.buf if self.q.lower() in s.lower()]
+        self.lst = type(self.lst)()  # rebuild to refresh content simply
+        for s in rows[-(h-4):]:
+            self.lst.append_item(s)
+        self.lst.set_block_title("Logs", True)
+        term.draw_list(self.lst, top)
+        # bottom: search status
+        from . import Paragraph
+        p = Paragraph.from_text(f"/ {self.q}\nType to filter. Backspace deletes. q to quit")
+        p.set_block_title("Search", True)
+        term.draw_paragraph(p, bot)
+
+
+class MarkdownViewerDemo(DemoBase):
+    name = "Markdown"
+    desc = "Simple Markdown viewer (scroll)"
+    source_obj = None
+
+    def __init__(self) -> None:
+        sample = [
+            "# ratatui-py",
+            "",
+            "Python bindings for Ratatui (Rust TUI).",
+            "",
+            "- Paragraph, List, Table, Gauge, Tabs, Chart, BarChart, Sparkline",
+            "- Batched frame rendering",
+            "- Diagnostics on demand",
+            "",
+            "## Controls",
+            "j/k: scroll, q: quit",
+            "",
+        ]
+        # Try to load README.md; fall back to sample
+        try:
+            import pathlib
+            p = pathlib.Path(__file__).resolve().parents[2] / "README.md"
+            if p.exists():
+                text = p.read_text(encoding="utf-8", errors="replace")
+                self.lines = text.splitlines() or sample
+            else:
+                self.lines = sample
+        except Exception:
+            self.lines = sample
+        self.off = 0
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key":
+            return
+        ch = evt.get("ch", 0)
+        if not ch:
+            return
+        c = chr(ch).lower()
+        if c == 'j':
+            self.off = min(max(0, len(self.lines) - 1), self.off + 1)
+        elif c == 'k':
+            self.off = max(0, self.off - 1)
+
+    def render(self, term: Terminal, rect: Tuple[int,int,int,int]) -> None:
+        from . import Paragraph
+        x, y, w, h = rect
+        view = self.lines[self.off:self.off+max(1, h-2)]
+        p = Paragraph.from_text("\n".join(view))
+        p.set_block_title(f"Markdown (lines {self.off+1}-{self.off+len(view)} / {len(self.lines)})", True)
+        term.draw_paragraph(p, rect)
+
+
+class SpectrumAnalyzerDemo(DemoBase):
+    name = "Spectrum"
+    desc = "Synthetic audio spectrum (bars)"
+    source_obj = None
+
+    def __init__(self) -> None:
+        import math
+        self.t = 0.0
+        self.n = 48
+        self.vals = [0] * self.n
+        self.decay = 0.85
+
+    def tick(self, dt: float) -> None:
+        import math, random
+        self.t += dt
+        # generate a few sine peaks + noise
+        peaks = [
+            (0.1, 8.0),
+            (0.2, 4.5),
+            (0.35, 6.2),
+            (0.55, 7.0),
+        ]
+        new = []
+        for i in range(self.n):
+            x = i / max(1, self.n - 1)
+            v = 0.0
+            for a, f in peaks:
+                v += a * max(0.0, math.sin((x * f + self.t * 2.0)))
+            v += 0.05 * random.random()
+            new.append(int(max(0.0, v) * 40))
+        # decay / peak-hold style
+        self.vals = [max(int(self.vals[i] * self.decay), new[i]) for i in range(self.n)]
+
+    def render(self, term: Terminal, rect: Tuple[int,int,int,int]) -> None:
+        from . import BarChart
+        x, y, w, h = rect
+        b = BarChart()
+        b.set_values(self.vals)
+        labels = [""] * len(self.vals)
+        b.set_labels(labels)
+        b.set_block_title("Spectrum (q quit)", True)
+        term.draw_barchart(b, rect)
+
+
+class FileManagerDemo(DemoBase):
+    name = "Files"
+    desc = "Two‑pane file manager"
+    source_obj = None
+
+    def __init__(self) -> None:
+        import os
+        self.left_dir = os.getcwd()
+        self.right_dir = os.getcwd()
+        self.left_sel = 0
+        self.right_sel = 0
+        self.focus = 'left'
+
+    def _listdir(self, path: str) -> list[str]:
+        import os
+        try:
+            entries = os.listdir(path)
+        except Exception:
+            return []
+        entries.sort(key=str.lower)
+        # show parent and directories first
+        out = [".."]
+        for e in entries:
+            p = os.path.join(path, e)
+            if os.path.isdir(p):
+                out.append(e + "/")
+        for e in entries:
+            p = os.path.join(path, e)
+            if not os.path.isdir(p):
+                out.append(e)
+        return out
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key":
+            return
+        code = evt.get("code", 0)
+        ch = evt.get("ch", 0)
+        import os
+        if code in (2,):  # left
+            self.focus = 'left'
+            return
+        if code in (3,):  # right
+            self.focus = 'right'
+            return
+        if ch:
+            c = chr(ch).lower()
+            if c == 'j':
+                if self.focus == 'left':
+                    self.left_sel += 1
+                else:
+                    self.right_sel += 1
+            elif c == 'k':
+                if self.focus == 'left':
+                    self.left_sel = max(0, self.left_sel - 1)
+                else:
+                    self.right_sel = max(0, self.right_sel - 1)
+            elif c == '\r':
+                # enter directory
+                if self.focus == 'left':
+                    items = self._listdir(self.left_dir)
+                    idx = min(self.left_sel, max(0, len(items)-1))
+                    target = items[idx] if items else None
+                    if target:
+                        path = os.path.normpath(os.path.join(self.left_dir, target))
+                        if target == "..":
+                            self.left_dir = os.path.dirname(self.left_dir)
+                            self.left_sel = 0
+                        elif os.path.isdir(path):
+                            self.left_dir = path
+                            self.left_sel = 0
+                else:
+                    items = self._listdir(self.right_dir)
+                    idx = min(self.right_sel, max(0, len(items)-1))
+                    target = items[idx] if items else None
+                    if target:
+                        path = os.path.normpath(os.path.join(self.right_dir, target))
+                        if target == "..":
+                            self.right_dir = os.path.dirname(self.right_dir)
+                            self.right_sel = 0
+                        elif os.path.isdir(path):
+                            self.right_dir = path
+                            self.right_sel = 0
+
+    def render(self, term: Terminal, rect: Tuple[int,int,int,int]) -> None:
+        from . import List, Paragraph
+        left, right = split_v(rect, 0.5, 0.5, gap=1)
+        litems = self._listdir(self.left_dir)
+        ritems = self._listdir(self.right_dir)
+        l = List()
+        for s in litems: l.append_item(s)
+        r = List()
+        for s in ritems: r.append_item(s)
+        l.set_selected(min(self.left_sel, max(0, len(litems)-1)))
+        r.set_selected(min(self.right_sel, max(0, len(ritems)-1)))
+        l.set_block_title(f"{self.left_dir}  (j/k, Enter, ← focus)", True)
+        r.set_block_title(f"{self.right_dir}  (j/k, Enter, → focus)", True)
+        term.draw_list(l, left)
+        term.draw_list(r, right)
+
+
+class ChatDemo(DemoBase):
+    name = "Chat"
+    desc = "Mock chat UI"
+    source_obj = None
+
+    def __init__(self) -> None:
+        self.msgs: list[str] = ["Welcome to ratatui-py chat! (Enter sends, q quits)"]
+        self.input = ""
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key":
+            return
+        ch = evt.get("ch", 0)
+        if not ch:
+            return
+        c = chr(ch)
+        if c == '\r':
+            if self.input.strip():
+                self.msgs.append(self.input)
+                if len(self.msgs) > 200: self.msgs.pop(0)
+                self.input = ""
+        elif c == '\b' or ord(c) == 127:
+            self.input = self.input[:-1]
+        elif c.isprintable():
+            self.input += c
+
+    def render(self, term: Terminal, rect: Tuple[int,int,int,int]) -> None:
+        from . import List, Paragraph
+        main, inp = split_h(rect, 1.0, 3.0, gap=1)
+        lst = List()
+        start = max(0, len(self.msgs) - (main[3] - 2))
+        for s in self.msgs[start:]: lst.append_item(s)
+        lst.set_block_title("Messages", True)
+        term.draw_list(lst, main)
+        p = Paragraph.from_text(self.input)
+        p.set_block_title("Input", True)
+        term.draw_paragraph(p, inp)
+
+
+class PlasmaDemo(DemoBase):
+    name = "Plasma"
+    desc = "Demoscene plasma shader"
+    source_obj = None
+
+    def __init__(self) -> None:
+        self.t = 0.0
+        self.paused = False
+        self.speed = 1.0
+        # simple ASCII gradient (light to dark)
+        self.grad = " .:-=+*#%@"
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key":
+            return
+        ch = evt.get("ch", 0)
+        if not ch:
+            return
+        c = chr(ch).lower()
+        if c == 'p':
+            self.paused = not self.paused
+        elif c == '+':
+            self.speed = min(5.0, self.speed * 1.25)
+        elif c == '-':
+            self.speed = max(0.2, self.speed * 0.8)
+
+    def tick(self, dt: float) -> None:
+        if not self.paused:
+            self.t += dt * self.speed
+
+    def render_cmds(self, rect: Tuple[int,int,int,int]) -> list:
+        from . import Paragraph
+        x, y, w, h = rect
+        if w <= 0 or h <= 0:
+            return []
+        import math
+        # plasma based on combined sines in screen space + time
+        lines = []
+        for j in range(h):
+            row = []
+            for i in range(w):
+                xf = i / max(1, w - 1)
+                yf = j / max(1, h - 1)
+                v = 0.0
+                v += math.sin((xf * 6.283) + self.t)
+                v += math.sin((yf * 6.283) * 1.5 - self.t * 0.8)
+                v += math.sin((xf + yf) * 6.283 * 0.7 + self.t * 0.5)
+                # normalize to 0..1
+                vn = (v / 3.0 + 1.0) * 0.5
+                idx = int(vn * (len(self.grad) - 1))
+                row.append(self.grad[idx])
+            lines.append("".join(row))
+        p = Paragraph.from_text("\n".join(lines))
+        p.set_block_title("Plasma (p pause, +/- speed)", True)
+        return [DrawCmd.paragraph(p, rect)]

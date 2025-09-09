@@ -110,9 +110,15 @@ class Terminal:
     def draw_frame(self, cmds: _List["DrawCmd"]) -> bool:
         FfiDrawCmd = self._lib.FfiDrawCmd
         arr = (FfiDrawCmd * len(cmds))()
+        # Keep owners alive across the FFI call to prevent use-after-free of handles.
+        owners = []
         for i, cmd in enumerate(cmds):
             arr[i] = FfiDrawCmd(cmd.kind, cmd.handle, cmd.rect)
-        return bool(self._lib.ratatui_terminal_draw_frame(self._handle, arr, len(cmds)))
+            if getattr(cmd, 'owner', None) is not None:
+                owners.append(cmd.owner)
+        ok = bool(self._lib.ratatui_terminal_draw_frame(self._handle, arr, len(cmds)))
+        # owners list goes out of scope here, after the draw returns.
+        return ok
 
     def size(self) -> Tuple[int, int]:
         w = C.c_uint16(0)
@@ -604,39 +610,42 @@ def headless_render_chart(width: int, height: int, c: Chart) -> str:
 
 
 class DrawCmd:
-    def __init__(self, kind: int, handle: C.c_void_p, rect: FfiRect):
+    def __init__(self, kind: int, handle: C.c_void_p, rect: FfiRect, owner: Optional[object] = None):
         self.kind = int(kind)
         self.handle = handle
         self.rect = rect
+        # Keep a strong reference to the owning Python object so the FFI handle
+        # isn't freed by GC before the draw call consumes it.
+        self.owner = owner
 
     @staticmethod
     def paragraph(p: Paragraph, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Paragraph"], p._handle, FfiRect(*map(int, rect)))
+        return DrawCmd(FFI_WIDGET_KIND["Paragraph"], p._handle, FfiRect(*map(int, rect)), owner=p)
 
     @staticmethod
     def list(lst: List, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["List"], lst._handle, FfiRect(*map(int, rect)))
+        return DrawCmd(FFI_WIDGET_KIND["List"], lst._handle, FfiRect(*map(int, rect)), owner=lst)
 
     @staticmethod
     def table(t: Table, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Table"], t._handle, FfiRect(*map(int, rect)))
+        return DrawCmd(FFI_WIDGET_KIND["Table"], t._handle, FfiRect(*map(int, rect)), owner=t)
 
     @staticmethod
     def gauge(g: Gauge, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Gauge"], g._handle, FfiRect(*map(int, rect)))
+        return DrawCmd(FFI_WIDGET_KIND["Gauge"], g._handle, FfiRect(*map(int, rect)), owner=g)
 
     @staticmethod
     def tabs(t: Tabs, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Tabs"], t._handle, FfiRect(*map(int, rect)))
+        return DrawCmd(FFI_WIDGET_KIND["Tabs"], t._handle, FfiRect(*map(int, rect)), owner=t)
 
     @staticmethod
     def barchart(b: BarChart, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["BarChart"], b._handle, FfiRect(*map(int, rect)))
+        return DrawCmd(FFI_WIDGET_KIND["BarChart"], b._handle, FfiRect(*map(int, rect)), owner=b)
 
     @staticmethod
     def sparkline(s: Sparkline, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Sparkline"], s._handle, FfiRect(*map(int, rect)))
+        return DrawCmd(FFI_WIDGET_KIND["Sparkline"], s._handle, FfiRect(*map(int, rect)), owner=s)
 
     @staticmethod
     def chart(c: Chart, rect: Tuple[int,int,int,int]) -> "DrawCmd":
-        return DrawCmd(FFI_WIDGET_KIND["Chart"], c._handle, FfiRect(*map(int, rect)))
+        return DrawCmd(FFI_WIDGET_KIND["Chart"], c._handle, FfiRect(*map(int, rect)), owner=c)

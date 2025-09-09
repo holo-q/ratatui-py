@@ -7,11 +7,13 @@ ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
-# Default debug-friendly environment (overridden if already set)
-os.environ.setdefault("RUST_BACKTRACE", "full")
-os.environ.setdefault("RATATUI_FFI_TRACE", "1")
-os.environ.setdefault("RATATUI_FFI_NO_ALTSCR", "1")
-os.environ.setdefault("RATATUI_FFI_PROFILE", "debug")
+# Optional debug-friendly environment: enable with RATATUI_PY_DEBUG=1
+if os.getenv("RATATUI_PY_DEBUG"):
+    os.environ.setdefault("RUST_BACKTRACE", "full")
+    os.environ.setdefault("RATATUI_FFI_TRACE", "1")
+    os.environ.setdefault("RATATUI_FFI_NO_ALTSCR", "1")
+    os.environ.setdefault("RATATUI_FFI_PROFILE", "debug")
+    os.environ.setdefault("RATATUI_FFI_LOG", str(ROOT / "ratatui_ffi.log"))
 
 debug = os.getenv("RATATUI_PY_DEBUG")
 def dprint(msg: str) -> None:

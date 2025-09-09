@@ -120,6 +120,84 @@ ratatui-py-dashboard
 - Wrong library picked up: ensure `RATATUI_FFI_LIB` points to a library matching your OS/arch.
 - Import errors on fresh install: reinstall in a clean venv to ensure the bundled library is present.
 
+### Terminal behavior and “clashes” cheat‑sheet
+
+Ratatui (via crossterm) uses raw mode and (optionally) the alternate screen. Some terminal environments or Python shells can interact with these features in surprising ways. This section lists common scenarios and how to address them.
+
+- Scrollback appears “lost”
+  - Alt screen replaces the visible buffer; your scrollback is preserved but hidden until exit.
+  - Fix: leave alt screen off (default in this package) or exit the app. To force alt screen: set `RATATUI_FFI_ALTSCR=1`.
+
+- Keystrokes echo on screen, or input feels “sticky”
+  - Raw mode controls whether the terminal echoes input and how keys are delivered.
+  - Fix: raw mode is on by default here; to disable (e.g. for logging), set `RATATUI_FFI_NO_RAW=1`.
+
+- Integrated terminals (VS Code, JetBrains, Jupyter, ipython)
+  - Some shells may buffer or handle ANSI differently; full‑screen TUIs might flicker.
+  - Fix: run from a regular terminal (e.g., GNOME Terminal, iTerm2, Windows Terminal). For diagnostics, disable alt screen and enable logging (see below).
+
+- tmux/screen quirks
+  - Multiplexers change terminfo and may alter mouse/keypress behavior or scrollback.
+  - Fix: prefer alt screen in tmux (`RATATUI_FFI_ALTSCR=1`). If scrollback is a priority, keep alt screen off and accept in‑place updates.
+
+- WSL/ConPTY (Windows)
+  - ConPTY handling can differ across versions; ensure you’re using Windows Terminal or a recent console host.
+  - If you see rendering anomalies, try disabling alt screen first.
+
+- CI/headless usage
+  - TUIs require a TTY; instead, use headless render helpers like `headless_render_*` and `ratatui_headless_render_frame` to snapshot output for tests.
+
+- Unicode/emoji rendering
+  - Ensure your locale is UTF‑8 and your font supports the glyphs you render. Some terminals need explicit configuration.
+
+### Stable diagnostics and backtraces
+
+Turn on robust diagnostics only when needed:
+
+```bash
+# rich diagnostics without alt screen
+RATATUI_PY_DEBUG=1 uv run ratatui-py-demos
+
+# or enable flags individually
+RUST_BACKTRACE=full \
+RATATUI_FFI_TRACE=1 \
+RATATUI_FFI_NO_ALTSCR=1 \
+RATATUI_FFI_PROFILE=debug \
+RATATUI_FFI_LOG=ratatui_ffi.log \
+uv run ratatui-py-demos
+```
+
+What these do:
+- `RUST_BACKTRACE=full`: line‑accurate Rust backtraces on panics.
+- `RATATUI_FFI_TRACE=1`: prints ENTER/EXIT lines for FFI calls and panics.
+- `RATATUI_FFI_NO_ALTSCR=1`: avoids alt screen so logs remain visible.
+- `RATATUI_FFI_PROFILE=debug`: bundles the debug cdylib for accurate symbols.
+- `RATATUI_FFI_LOG=…`: saves all FFI logs to a file (recreated per run). Set `RATATUI_FFI_LOG_APPEND=1` to append.
+
+Advanced:
+- Python faulthandler: `PYTHONFAULTHANDLER=1` to dump tracebacks on signals.
+- gdb/lldb: `gdb --args python -m ratatui_py.demo_runner` → `run`, then `bt full` on crash.
+
+### Known pitfalls we harden against
+
+- Dangling handles in batched frames (use‑after‑free)
+  - Cause: passing raw FFI pointers without keeping owners alive across `draw_frame`.
+  - Mitigation: Python wrapper retains strong references to widget owners for the duration of the draw.
+
+- Out‑of‑bounds rectangles
+  - Cause: computing rects larger than the frame area.
+  - Mitigation: FFI clamps rects to the current frame before rendering.
+
+- Panics inside FFI draw
+  - Cause: invalid inputs or internal errors.
+  - Mitigation: All FFI draw/init/free are wrapped with `catch_unwind`, logging the panic and backtrace and returning `false` rather than aborting.
+
+If you still hit rendering anomalies or crashes, please open an issue with:
+- Your OS/terminal, whether under tmux/screen/WSL.
+- The exact command and environment variables used.
+- `ratatui_ffi.log` and the console backtrace (if any).
+- A minimal script to reproduce.
+
 ## Why ratatui-py?
 - Bring Ratatui’s modern TUI widgets and layout engine to Python.
 - Avoid ncurses boilerplate; focus on your UI and event loop.

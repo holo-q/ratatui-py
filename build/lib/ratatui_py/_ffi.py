@@ -184,6 +184,10 @@ def load_library(explicit: str | None = None) -> C.CDLL:
     lib.ratatui_paragraph_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
     lib.ratatui_paragraph_free.argtypes = [C.c_void_p]
     lib.ratatui_paragraph_append_line.argtypes = [C.c_void_p, C.c_char_p, FfiStyle]
+    # New: fine-grained span building
+    lib.ratatui_paragraph_new_empty.restype = C.c_void_p
+    lib.ratatui_paragraph_append_span.argtypes = [C.c_void_p, C.c_char_p, FfiStyle]
+    lib.ratatui_paragraph_line_break.argtypes = [C.c_void_p]
 
     lib.ratatui_terminal_draw_paragraph.argtypes = [C.c_void_p, C.c_void_p]
     lib.ratatui_terminal_draw_paragraph.restype = C.c_bool
