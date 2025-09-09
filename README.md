@@ -256,6 +256,8 @@ MIT — see [LICENSE](./LICENSE).
 
 [ratatui_ffi]: https://github.com/holo-q/ratatui-ffi
 [Ratatui]: https://github.com/ratatui-org/ratatui
-Demo preview (replace with your own recording):
+Demo preview
 
 ![Dashboard demo](docs/assets/dashboard.gif)
+
+[View asciinema cast](docs/assets/dashboard.cast)
