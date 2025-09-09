@@ -6,14 +6,35 @@ build-backend = "setuptools.build_meta"
 name = "ratatui-py"
 version = "0.3.1"
 description = "Python bindings for ratatui_ffi (Ratatui C ABI) via ctypes"
-readme = "README.md"
+readme = {file = "README.md", content-type = "text/markdown"}
 authors = [{ name = "holo-q" }]
 requires-python = ">=3.8"
 classifiers = [
-  "Programming Language :: Python :: 3",
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Rust",
+  "Programming Language :: C",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Terminals",
 ]
+keywords = [
+  "ratatui",
+  "tui",
+  "terminal-ui",
+  "terminal",
+  "ffi",
+  "ctypes",
+  "rust",
+  "bindings",
+  "widgets",
+]
+license = {file = "LICENSE"}
 dependencies = []
 
 [project.scripts]
@@ -21,10 +42,14 @@ ratatui-py-hello = "ratatui_py.examples:hello_main"
 ratatui-py-widgets = "ratatui_py.examples:widgets_main"
 ratatui-py-life = "ratatui_py.examples:life_main"
 ratatui-py-demos = "ratatui_py.demo_runner:run_demo_hub"
+ratatui-py-dashboard = "ratatui_py.demo_runner:run_dashboard"
 
 [project.urls]
 Homepage = "https://github.com/holo-q/ratatui-py"
 Repository = "https://github.com/holo-q/ratatui-py"
+Issues = "https://github.com/holo-q/ratatui-py/issues"
+Changelog = "https://github.com/holo-q/ratatui-py/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/holo-q/ratatui-py#readme"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -41,3 +66,21 @@ dev-dependencies = [
   "mypy>=1.10",
   "pytest>=8",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []
+
+[tool.mypy]
+python_version = "3.8"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_any_generics = false

@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a problem with ratatui-py
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug and steps to reproduce.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: ratatui-py version
+      placeholder: e.g. 0.3.1
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python, terminal, and whether using prebuilt or built from source.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/traceback
+      render: shell
+

@@ -15,6 +15,7 @@ from . import (
     DrawCmd,
 )
 from . import examples as ex
+from .layout import margin, split_h, split_v
 
 
 class DemoBase:
@@ -31,6 +32,15 @@ class DemoBase:
     def render_cmds(self, rect: Tuple[int, int, int, int]) -> list:
         return []
 
+    def render(self, term: Terminal, rect: Tuple[int, int, int, int]) -> None:
+        # Fallback simple renderer; override in subclasses
+        for cmd in self.render_cmds(rect):
+            k = cmd.kind
+            r = (cmd.rect.x, cmd.rect.y, cmd.rect.width, cmd.rect.height)
+            if k == 1:  # Paragraph
+                # We can't reconstruct from handle generically here; subclasses should override
+                pass
+
 
 class HelloDemo(DemoBase):
     name = "Hello"
@@ -44,6 +54,14 @@ class HelloDemo(DemoBase):
         )
         p.set_block_title("Hello", True)
         return [DrawCmd.paragraph(p, rect)]
+
+    def render(self, term: Terminal, rect: Tuple[int, int, int, int]) -> None:
+        p = Paragraph.from_text(
+            "Hello from Python!\nThis is ratatui.\n\n" \
+            "Press Tab to switch demos, q to quit.\n"
+        )
+        p.set_block_title("Hello", True)
+        term.draw_paragraph(p, rect)
 
 
 class WidgetsDemo(DemoBase):
@@ -74,6 +92,18 @@ class WidgetsDemo(DemoBase):
         self.g.set_block_title("Gauge", True)
         c3 = DrawCmd.gauge(self.g, (x, y + h1 + h2, w, h3))
         return [c1, c2, c3]
+
+    def render(self, term: Terminal, rect: Tuple[int, int, int, int]) -> None:
+        x, y, w, h = rect
+        h1 = max(3, h // 3)
+        h2 = max(3, h // 3)
+        h3 = max(1, h - h1 - h2)
+        self.lst.set_block_title("List", True)
+        term.draw_list(self.lst, (x, y, w, h1))
+        self.tbl.set_block_title("Table", True)
+        term.draw_table(self.tbl, (x, y + h1, w, h2))
+        self.g.set_block_title("Gauge", True)
+        term.draw_gauge(self.g, (x, y + h1 + h2, w, h3))
 
 
 class LifeDemo(DemoBase):
@@ -126,6 +156,119 @@ class LifeDemo(DemoBase):
         p.set_block_title("Conway's Life", True)
         return [DrawCmd.paragraph(p, rect)]
 
+    def render(self, term: Terminal, rect: Tuple[int, int, int, int]) -> None:
+        x, y, w, h = rect
+        self._ensure(w, h - 2 if h > 2 else h)
+        text = ex._render_text(self.grid)
+        hints = "\n[q]uit [Tab] next [p]ause [+/-] speed [r]andomize"
+        p = Paragraph.from_text(text + hints)
+        p.set_block_title("Conway's Life", True)
+        term.draw_paragraph(p, rect)
+
+
+class DashboardDemo(DemoBase):
+    name = "Dashboard"
+    desc = "Tabs + List + Chart + Gauges + Sparkline"
+    source_obj = None  # filled dynamically below
+
+    def __init__(self) -> None:
+        self.tabs = ["Overview", "Services", "Metrics"]
+        self.tab_idx = 0
+        self.services = [f"svc-{i:02d}" for i in range(1, 9)]
+        self.sel = 0
+        self.cpu = 0.35
+        self.mem = 0.55
+        self.spark = [10, 12, 9, 14, 11, 13, 12, 16, 15, 14, 17, 16, 18]
+        self.t = 0.0
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key":
+            return
+        ch = evt.get("ch", 0)
+        if not ch:
+            return
+        c = chr(ch).lower()
+        if c == 'a':
+            self.tab_idx = (self.tab_idx - 1) % len(self.tabs)
+        elif c == 'd':
+            self.tab_idx = (self.tab_idx + 1) % len(self.tabs)
+        elif c == 'j':
+            self.sel = (self.sel + 1) % len(self.services)
+        elif c == 'k':
+            self.sel = (self.sel - 1) % len(self.services)
+        elif c == 'r':
+            # randomize a small spike
+            self.cpu = min(0.99, self.cpu + 0.2)
+            self.mem = min(0.99, self.mem + 0.15)
+
+    def tick(self, dt: float) -> None:
+        self.t += dt
+        # gentle random walk for cpu/mem
+        import random
+        self.cpu = max(0.02, min(0.98, self.cpu + random.uniform(-0.05, 0.05)))
+        self.mem = max(0.02, min(0.98, self.mem + random.uniform(-0.03, 0.03)))
+        # update sparkline history
+        val = max(1, min(50, (self.spark[-1] if self.spark else 20) + random.randint(-4, 5)))
+        self.spark.append(val)
+        if len(self.spark) > 50:
+            self.spark.pop(0)
+
+    def render(self, term: Terminal, rect: Tuple[int, int, int, int]) -> None:
+        x, y, w, h = rect
+        if w < 20 or h < 8:
+            p = Paragraph.from_text("Increase terminal size for dashboard…")
+            p.set_block_title("Dashboard", True)
+            term.draw_paragraph(p, rect)
+            return
+        # layout: header (3), main (h-8), footer (5)
+        header_h = min(3, h)
+        footer_h = 5 if h >= 10 else max(3, h - header_h - 3)
+        main_h = max(1, h - header_h - footer_h)
+        header = (x, y, w, header_h)
+        main = (x, y + header_h, w, main_h)
+        footer = (x, y + header_h + main_h, w, footer_h)
+
+        # header: tabs
+        from . import Tabs
+        tabs = Tabs()
+        tabs.set_titles(self.tabs)
+        tabs.set_selected(self.tab_idx)
+        tabs.set_block_title("ratatui-py Dashboard (a/d tabs, j/k move, r spike, q quit)", True)
+        term.draw_tabs(tabs, header)
+
+        # main: left list, right chart
+        left, right = split_v(main, 0.38, 0.62, gap=1)
+        lst = UiList()
+        for i, name in enumerate(self.services):
+            lst.append_item(f"{'> ' if i == self.sel else '  '}{name}")
+        lst.set_selected(self.sel)
+        lst.set_block_title("Services", True)
+        term.draw_list(lst, left)
+
+        # Chart of CPU over time
+        points = [(i, v) for i, v in enumerate(self.spark[-min(len(self.spark), max(10, right[2]-4)):])]
+        ch = UiChart()
+        ch.add_line("cpu", [(float(x), float(y)) for x, y in points])
+        ch.set_axes_titles("t", "%")
+        ch.set_block_title("CPU history", True)
+        term.draw_chart(ch, right)
+
+        # footer: two gauges + sparkline bar
+        bottom_top, bottom_bot = split_h(footer, 0.5, 0.5, gap=1)
+        g_left, g_right = split_v(bottom_top, 0.5, 0.5, gap=1)
+        g1 = UiGauge().ratio(self.cpu).label(f"CPU {int(self.cpu*100)}%")
+        g1.set_block_title("CPU", True)
+        term.draw_gauge(g1, g_left)
+        g2 = UiGauge().ratio(self.mem).label(f"Mem {int(self.mem*100)}%")
+        g2.set_block_title("Memory", True)
+        term.draw_gauge(g2, g_right)
+
+        from . import Sparkline
+        sp = Sparkline()
+        sp.set_values(self.spark[-(bottom_bot[2]-2 if bottom_bot[2] > 2 else len(self.spark)):])
+        sp.set_block_title("Throughput", True)
+        term.draw_sparkline(sp, bottom_bot)
+
 
 def _load_source(obj) -> str:
     try:
@@ -147,11 +290,10 @@ def _render_code(term: Terminal, rect: Tuple[int, int, int, int], title: str, co
 
 
 def run_demo_hub() -> None:
-    demos: List[DemoBase] = [HelloDemo(), WidgetsDemo(), LifeDemo()]
+    demos: List[DemoBase] = [HelloDemo(), WidgetsDemo(), LifeDemo(), DashboardDemo()]
     idx = 0
     code_scroll = 0
     last = time.monotonic()
-
     with Terminal() as term:
         while True:
             now = time.monotonic()
@@ -185,7 +327,7 @@ def run_demo_hub() -> None:
             # then the demo, in case of any overlap it stays on top
             cmds.extend(demo.render_cmds(demo_rect))
 
-            # draw once for the whole frame
+            # Single batched frame for flicker-free two-pane layout
             term.draw_frame(cmds)
 
             # input handling
@@ -218,3 +360,25 @@ def run_demo_hub() -> None:
 
 if __name__ == "__main__":
     run_demo_hub()
+
+
+def run_dashboard() -> None:
+    demo = DashboardDemo()
+    last = time.monotonic()
+    with Terminal() as term:
+        while True:
+            now = time.monotonic()
+            dt = now - last
+            last = now
+            demo.tick(dt)
+            w, h = term.size()
+            demo.render(term, (0, 0, w, h))
+            evt = term.next_event(50)
+            if evt and evt.get("kind") == "key":
+                ch = evt.get("ch", 0)
+                if ch and chr(ch).lower() == 'q':
+                    break
+                demo.on_key(evt)
+
+# Link demo source for code pane
+DashboardDemo.source_obj = run_dashboard

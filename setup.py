@@ -89,5 +89,5 @@ if __name__ == "__main__":
     setup(
         name="ratatui-py",
         cmdclass={"build_py": build_py, "develop": develop},
-        package_data={"ratatui_py": ["_bundled/*"]},
+        package_data={"ratatui_py": ["_bundled/*", "py.typed"]},
     )

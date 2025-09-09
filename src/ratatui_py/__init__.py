@@ -26,6 +26,7 @@ from .wrappers import (
     Scrollbar,
     Chart,
     DrawCmd,
+    App,
     headless_render_paragraph,
     headless_render_list,
     headless_render_table,
@@ -35,6 +36,7 @@ from .wrappers import (
     headless_render_sparkline,
     headless_render_chart,
 )
+from .layout import margin, split_h, split_v
 
 __all__ = [
     "load_library",
@@ -62,6 +64,7 @@ __all__ = [
     "Scrollbar",
     "Chart",
     "DrawCmd",
+    "App",
     "headless_render_paragraph",
     "headless_render_list",
     "headless_render_table",
@@ -70,4 +73,7 @@ __all__ = [
     "headless_render_barchart",
     "headless_render_sparkline",
     "headless_render_chart",
+    "margin",
+    "split_h",
+    "split_v",
 ]

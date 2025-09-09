@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 from pathlib import Path
 
@@ -6,15 +7,29 @@ ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
+debug = os.getenv("RATATUI_PY_DEBUG")
+def dprint(msg: str) -> None:
+    if debug:
+        sys.stderr.write(msg + "\n")
+        sys.stderr.flush()
+
+dprint("[ratatui-py-demos] start")
+
 # ensure shared lib is present for runtime
 try:
     from ratatui_py._bootstrap import ensure_runtime_lib
+    dprint("[ratatui-py-demos] ensuring runtime lib")
     ensure_runtime_lib()
-except Exception:
-    pass
+    dprint("[ratatui-py-demos] runtime lib ok")
+except Exception as e:
+    dprint(f"[ratatui-py-demos] bootstrap skipped: {e}")
 
 from ratatui_py.demo_runner import run_demo_hub
 
 if __name__ == "__main__":
-    run_demo_hub()
-
+    dprint("[ratatui-py-demos] launching hub")
+    try:
+        run_demo_hub()
+    except Exception as e:
+        dprint(f"[ratatui-py-demos] error: {e}")
+        raise

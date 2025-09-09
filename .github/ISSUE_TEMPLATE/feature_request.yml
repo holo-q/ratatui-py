@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an idea or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Problem to solve
+      description: What use-case or gap would this feature address?
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should the API look like? Any examples?
+  - type: textarea
+    id: alt
+    attributes:
+      label: Alternatives considered
+

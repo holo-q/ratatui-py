@@ -1,3 +1,4 @@
+LICENSE
 README.md
 pyproject.toml
 setup.py
@@ -6,9 +7,12 @@ uv.lock
 examples/hello_paragraph.py
 src/ratatui_py/__init__.py
 src/ratatui_py/__main__.py
+src/ratatui_py/_bootstrap.py
 src/ratatui_py/_ffi.py
 src/ratatui_py/demo_runner.py
 src/ratatui_py/examples.py
+src/ratatui_py/layout.py
+src/ratatui_py/py.typed
 src/ratatui_py/wrappers.py
 src/ratatui_py.egg-info/PKG-INFO
 src/ratatui_py.egg-info/SOURCES.txt
@@ -25,3 +29,5 @@ src/ratatui_py/__pycache__/wrappers.cpython-311.pyc
 src/ratatui_py/__pycache__/wrappers.cpython-313.pyc
 src/ratatui_py/_bundled/__init__.py
 src/ratatui_py/_bundled/libratatui_ffi.so
+tests/test_headless.py
+tests/test_layout.py
