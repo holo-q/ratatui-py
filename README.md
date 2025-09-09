@@ -1,0 +1,38 @@
+# ratatui-py
+
+Python bindings for [ratatui_ffi], the C ABI for [Ratatui] (Rust TUI).
+
+- Zero-build: wraps the prebuilt shared library via `ctypes`.
+- Cross-platform: loads `libratatui_ffi.so` (Linux), `.dylib` (macOS), or `ratatui_ffi.dll` (Windows).
+- Idiomatic Python wrappers for Terminal and Paragraph to start.
+
+## Install
+
+By default, install tries to bundle the Rust shared library automatically:
+
+Order of strategies (first that works is used):
+- Use a prebuilt library if `RATATUI_FFI_LIB` is set.
+- Build from a local source if `RATATUI_FFI_SRC` is set (runs `cargo build --release`).
+- Clone and build `holo-q/ratatui-ffi` at `RATATUI_FFI_TAG` (default v0.1.3) if network and toolchain are available.
+
+The resulting shared library is packaged at `ratatui_py/_bundled/` and loaded automatically at runtime.
+
+## Example
+
+```python
+from ratatui_py import Terminal, Paragraph
+
+with Terminal() as term:
+    p = Paragraph.from_text("Hello from Python!\nThis is ratatui.")
+    p.set_block_title("Demo", show_border=True)
+    term.draw_paragraph(p)
+```
+
+## Env Vars
+- `RATATUI_FFI_LIB`: absolute path to a prebuilt shared library to bundle/load.
+- `RATATUI_FFI_SRC`: path to local ratatui-ffi source to build with cargo.
+- `RATATUI_FFI_GIT`: override git URL (default `https://github.com/holo-q/ratatui-ffi.git`).
+- `RATATUI_FFI_TAG`: git tag/commit to fetch for bundling (default `v0.1.3`).
+
+[ratatui_ffi]: https://github.com/holo-q/ratatui-ffi
+[Ratatui]: https://github.com/ratatui-org/ratatui
