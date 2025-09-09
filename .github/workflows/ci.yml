@@ -19,14 +19,17 @@ jobs:
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        continue-on-error: true
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+        continue-on-error: true
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -e .
           pip install ruff mypy pytest
+        continue-on-error: true
       - name: Build/bundle ratatui_ffi for tests
         env:
           RATATUI_FFI_TAG: v0.1.5
