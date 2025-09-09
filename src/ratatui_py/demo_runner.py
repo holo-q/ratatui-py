@@ -327,8 +327,12 @@ def run_demo_hub() -> None:
             # then the demo, in case of any overlap it stays on top
             cmds.extend(demo.render_cmds(demo_rect))
 
-            # Single batched frame for flicker-free two-pane layout
-            term.draw_frame(cmds)
+            # Batched frame; if it fails for any reason, fall back to simple draws
+            ok = term.draw_frame(cmds)
+            if not ok:
+                # simple draws: code pane first, then demo
+                term.draw_paragraph(pcode, code_rect)
+                demo.render(term, demo_rect)
 
             # input handling
             evt = term.next_event(50)
