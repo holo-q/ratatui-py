@@ -76,7 +76,14 @@ target-version = "py38"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
-ignore = ["E501"]
+ignore = [
+  "E501",  # line length
+  "E701",  # multiple statements on one line (colon)
+  "E702",  # multiple statements on one line (semicolon)
+  "F401",  # imported but unused (allow local import grouping)
+  "F841",  # assigned but unused (some demo scratch vars)
+  "I001",  # import sorting (allow in-function import blocks)
+]
 
 [tool.mypy]
 python_version = "3.8"
