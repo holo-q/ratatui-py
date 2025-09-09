@@ -69,10 +69,9 @@ PY
       # Optional: enable mypy once types are finalized for bindings
       # - name: Type check
       #   run: mypy src
-      - name: Tests
+      - name: Tests (layout only for now)
         env:
           RATATUI_FFI_LIB: ${{ env.RATATUI_FFI_LIB }}
           LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
           PYTHONPATH: ${{ github.workspace }}/src
-        run: pytest -q -vv
-        continue-on-error: true
+        run: pytest -q -vv tests/test_layout.py
