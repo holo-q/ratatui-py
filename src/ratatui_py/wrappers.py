@@ -1,7 +1,7 @@
 from __future__ import annotations
 import ctypes as C
 from dataclasses import dataclass
-from typing import Optional, Tuple, Iterable, Sequence
+from typing import Optional, Tuple, Iterable, Sequence, List as _List
 
 from ._ffi import (
     load_library,
@@ -14,6 +14,7 @@ from ._ffi import (
     FFI_KEY_MODS,
     FFI_MOUSE_KIND,
     FFI_MOUSE_BUTTON,
+    FFI_WIDGET_KIND,
 )
 
 @dataclass
@@ -99,6 +100,18 @@ class Terminal:
     def draw_sparkline(self, s: "Sparkline", rect: Tuple[int,int,int,int]) -> bool:
         r = FfiRect(*map(int, rect))
         return bool(self._lib.ratatui_terminal_draw_sparkline_in(self._handle, s._handle, r))
+
+    # Chart and batched frames
+    def draw_chart(self, c: "Chart", rect: Tuple[int,int,int,int]) -> bool:
+        r = FfiRect(*map(int, rect))
+        return bool(self._lib.ratatui_terminal_draw_chart_in(self._handle, c._handle, r))
+
+    def draw_frame(self, cmds: _List["DrawCmd"]) -> bool:
+        FfiDrawCmd = self._lib.FfiDrawCmd
+        arr = (FfiDrawCmd * len(cmds))()
+        for i, cmd in enumerate(cmds):
+            arr[i] = FfiDrawCmd(cmd.kind, cmd.handle, cmd.rect)
+        return bool(self._lib.ratatui_terminal_draw_frame(self._handle, arr, len(cmds)))
 
     def size(self) -> Tuple[int, int]:
         w = C.c_uint16(0)
@@ -466,3 +479,91 @@ def headless_render_sparkline(width: int, height: int, s: Sparkline) -> str:
         return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
     finally:
         lib.ratatui_string_free(out)
+
+
+class Chart:
+    def __init__(self):
+        self._lib = load_library()
+        ptr = self._lib.ratatui_chart_new()
+        if not ptr:
+            raise RuntimeError("ratatui_chart_new failed")
+        self._handle = C.c_void_p(ptr)
+
+    def add_line(self, name: str, points: Sequence[Tuple[float, float]], style: Optional[Style] = None) -> None:
+        n = name.encode("utf-8")
+        flat = []
+        for (x, y) in points:
+            flat.extend([float(x), float(y)])
+        arr = (C.c_double * len(flat))(*flat)
+        self._lib.ratatui_chart_add_line(self._handle, n, arr, len(points), (style or Style()).to_ffi())
+
+    def set_axes_titles(self, x: Optional[str], y: Optional[str]) -> None:
+        xx = None if x is None else x.encode("utf-8")
+        yy = None if y is None else y.encode("utf-8")
+        self._lib.ratatui_chart_set_axes_titles(self._handle, xx, yy)
+
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
+        t = None if title is None else title.encode("utf-8")
+        self._lib.ratatui_chart_set_block_title(self._handle, t, bool(show_border))
+
+    def close(self) -> None:
+        if getattr(self, "_handle", None):
+            self._lib.ratatui_chart_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+def headless_render_chart(width: int, height: int, c: Chart) -> str:
+    lib = c._lib
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_chart(C.c_uint16(width), C.c_uint16(height), c._handle, C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        lib.ratatui_string_free(out)
+
+
+class DrawCmd:
+    def __init__(self, kind: int, handle: C.c_void_p, rect: FfiRect):
+        self.kind = int(kind)
+        self.handle = handle
+        self.rect = rect
+
+    @staticmethod
+    def paragraph(p: Paragraph, rect: Tuple[int,int,int,int]) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Paragraph"], p._handle, FfiRect(*map(int, rect)))
+
+    @staticmethod
+    def list(lst: List, rect: Tuple[int,int,int,int]) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["List"], lst._handle, FfiRect(*map(int, rect)))
+
+    @staticmethod
+    def table(t: Table, rect: Tuple[int,int,int,int]) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Table"], t._handle, FfiRect(*map(int, rect)))
+
+    @staticmethod
+    def gauge(g: Gauge, rect: Tuple[int,int,int,int]) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Gauge"], g._handle, FfiRect(*map(int, rect)))
+
+    @staticmethod
+    def tabs(t: Tabs, rect: Tuple[int,int,int,int]) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Tabs"], t._handle, FfiRect(*map(int, rect)))
+
+    @staticmethod
+    def barchart(b: BarChart, rect: Tuple[int,int,int,int]) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["BarChart"], b._handle, FfiRect(*map(int, rect)))
+
+    @staticmethod
+    def sparkline(s: Sparkline, rect: Tuple[int,int,int,int]) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Sparkline"], s._handle, FfiRect(*map(int, rect)))
+
+    @staticmethod
+    def chart(c: Chart, rect: Tuple[int,int,int,int]) -> "DrawCmd":
+        return DrawCmd(FFI_WIDGET_KIND["Chart"], c._handle, FfiRect(*map(int, rect)))

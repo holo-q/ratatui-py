@@ -14,7 +14,7 @@ SRC_DIR = PKG_ROOT / "src" / "ratatui_py"
 BUNDLED_DIR = SRC_DIR / "_bundled"
 
 RATATUI_FFI_GIT = os.environ.get("RATATUI_FFI_GIT", "https://github.com/holo-q/ratatui-ffi.git")
-RATATUI_FFI_TAG = os.environ.get("RATATUI_FFI_TAG", "v0.1.3")
+RATATUI_FFI_TAG = os.environ.get("RATATUI_FFI_TAG", "v0.1.5")
 RATATUI_FFI_SRC = os.environ.get("RATATUI_FFI_SRC")
 RATATUI_FFI_LIB = os.environ.get("RATATUI_FFI_LIB")
 

@@ -2,6 +2,7 @@ import os
 import sys
 import ctypes as C
 from ctypes.util import find_library
+from pathlib import Path
 
 # ----- Low-level FFI types -----
 
@@ -105,6 +106,19 @@ FFI_COLOR = {
     "White": 16,
 }
 
+# Widget kinds for batched frame drawing
+FFI_WIDGET_KIND = {
+    "Paragraph": 1,
+    "List": 2,
+    "Table": 3,
+    "Gauge": 4,
+    "Tabs": 5,
+    "BarChart": 6,
+    "Sparkline": 7,
+    "Chart": 8,
+    # 9 reserved for Scrollbar if feature-enabled
+}
+
 # ----- Library loader -----
 
 def _default_names():
@@ -186,5 +200,143 @@ def load_library(explicit: str | None = None) -> C.CDLL:
     lib.ratatui_next_event.argtypes = [C.c_uint64, C.POINTER(FfiEvent)]
     lib.ratatui_next_event.restype = C.c_bool
 
+    # Event injection (for tests/automation)
+    lib.ratatui_inject_key.argtypes = [C.c_uint32, C.c_uint32, C.c_uint8]
+    lib.ratatui_inject_resize.argtypes = [C.c_uint16, C.c_uint16]
+    lib.ratatui_inject_mouse.argtypes = [C.c_uint32, C.c_uint32, C.c_uint16, C.c_uint16, C.c_uint8]
+
+    # List
+    lib.ratatui_list_new.restype = C.c_void_p
+    lib.ratatui_list_free.argtypes = [C.c_void_p]
+    lib.ratatui_list_append_item.argtypes = [C.c_void_p, C.c_char_p, FfiStyle]
+    lib.ratatui_list_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    lib.ratatui_list_set_selected.argtypes = [C.c_void_p, C.c_int]
+    lib.ratatui_list_set_highlight_style.argtypes = [C.c_void_p, FfiStyle]
+    lib.ratatui_list_set_highlight_symbol.argtypes = [C.c_void_p, C.c_char_p]
+    lib.ratatui_terminal_draw_list_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+    lib.ratatui_terminal_draw_list_in.restype = C.c_bool
+    lib.ratatui_headless_render_list.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+    lib.ratatui_headless_render_list.restype = C.c_bool
+
+    # Table
+    lib.ratatui_table_new.restype = C.c_void_p
+    lib.ratatui_table_free.argtypes = [C.c_void_p]
+    lib.ratatui_table_set_headers.argtypes = [C.c_void_p, C.c_char_p]
+    lib.ratatui_table_append_row.argtypes = [C.c_void_p, C.c_char_p]
+    lib.ratatui_table_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    lib.ratatui_table_set_selected.argtypes = [C.c_void_p, C.c_int]
+    lib.ratatui_table_set_row_highlight_style.argtypes = [C.c_void_p, FfiStyle]
+    lib.ratatui_table_set_highlight_symbol.argtypes = [C.c_void_p, C.c_char_p]
+    lib.ratatui_terminal_draw_table_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+    lib.ratatui_terminal_draw_table_in.restype = C.c_bool
+    lib.ratatui_headless_render_table.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+    lib.ratatui_headless_render_table.restype = C.c_bool
+
+    # Gauge
+    lib.ratatui_gauge_new.restype = C.c_void_p
+    lib.ratatui_gauge_free.argtypes = [C.c_void_p]
+    lib.ratatui_gauge_set_ratio.argtypes = [C.c_void_p, C.c_float]
+    lib.ratatui_gauge_set_label.argtypes = [C.c_void_p, C.c_char_p]
+    lib.ratatui_gauge_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    lib.ratatui_terminal_draw_gauge_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+    lib.ratatui_terminal_draw_gauge_in.restype = C.c_bool
+    lib.ratatui_headless_render_gauge.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+    lib.ratatui_headless_render_gauge.restype = C.c_bool
+
+    # Tabs
+    lib.ratatui_tabs_new.restype = C.c_void_p
+    lib.ratatui_tabs_free.argtypes = [C.c_void_p]
+    lib.ratatui_tabs_set_titles.argtypes = [C.c_void_p, C.c_char_p]
+    lib.ratatui_tabs_set_selected.argtypes = [C.c_void_p, C.c_uint16]
+    lib.ratatui_tabs_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    lib.ratatui_terminal_draw_tabs_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+    lib.ratatui_terminal_draw_tabs_in.restype = C.c_bool
+    lib.ratatui_headless_render_tabs.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+    lib.ratatui_headless_render_tabs.restype = C.c_bool
+
+    # Bar chart
+    lib.ratatui_barchart_new.restype = C.c_void_p
+    lib.ratatui_barchart_free.argtypes = [C.c_void_p]
+    lib.ratatui_barchart_set_values.argtypes = [C.c_void_p, C.POINTER(C.c_uint64), C.c_size_t]
+    lib.ratatui_barchart_set_labels.argtypes = [C.c_void_p, C.c_char_p]
+    lib.ratatui_barchart_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    lib.ratatui_terminal_draw_barchart_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+    lib.ratatui_terminal_draw_barchart_in.restype = C.c_bool
+    lib.ratatui_headless_render_barchart.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+    lib.ratatui_headless_render_barchart.restype = C.c_bool
+
+    # Chart
+    lib.ratatui_chart_new.restype = C.c_void_p
+    lib.ratatui_chart_free.argtypes = [C.c_void_p]
+    lib.ratatui_chart_add_line.argtypes = [C.c_void_p, C.c_char_p, C.POINTER(C.c_double), C.c_size_t, FfiStyle]
+    lib.ratatui_chart_set_axes_titles.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p]
+    lib.ratatui_chart_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    lib.ratatui_terminal_draw_chart_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+    lib.ratatui_terminal_draw_chart_in.restype = C.c_bool
+    lib.ratatui_headless_render_chart.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+    lib.ratatui_headless_render_chart.restype = C.c_bool
+
+    # Sparkline
+    lib.ratatui_sparkline_new.restype = C.c_void_p
+    lib.ratatui_sparkline_free.argtypes = [C.c_void_p]
+    lib.ratatui_sparkline_set_values.argtypes = [C.c_void_p, C.POINTER(C.c_uint64), C.c_size_t]
+    lib.ratatui_sparkline_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    lib.ratatui_terminal_draw_sparkline_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+    lib.ratatui_terminal_draw_sparkline_in.restype = C.c_bool
+    lib.ratatui_headless_render_sparkline.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+    lib.ratatui_headless_render_sparkline.restype = C.c_bool
+
+    # Optional scrollbar (if built with feature)
+    if hasattr(lib, 'ratatui_scrollbar_new'):
+        lib.ratatui_scrollbar_new.restype = C.c_void_p
+        lib.ratatui_scrollbar_free.argtypes = [C.c_void_p]
+        lib.ratatui_scrollbar_configure.argtypes = [C.c_void_p, C.c_uint32, C.c_uint16, C.c_uint16, C.c_uint16]
+        lib.ratatui_scrollbar_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+        lib.ratatui_terminal_draw_scrollbar_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+        lib.ratatui_terminal_draw_scrollbar_in.restype = C.c_bool
+        lib.ratatui_headless_render_scrollbar.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+        lib.ratatui_headless_render_scrollbar.restype = C.c_bool
+
+    # Batched frame drawing
+    class FfiDrawCmd(C.Structure):
+        _fields_ = [
+            ("kind", C.c_uint32),
+            ("handle", C.c_void_p),
+            ("rect", FfiRect),
+        ]
+
+    lib.FfiDrawCmd = FfiDrawCmd  # expose for importers
+    lib.ratatui_terminal_draw_frame.argtypes = [C.c_void_p, C.POINTER(FfiDrawCmd), C.c_size_t]
+    lib.ratatui_terminal_draw_frame.restype = C.c_bool
+
+    # Headless frame render (for testing composites)
+    if hasattr(lib, 'ratatui_headless_render_frame'):
+        lib.ratatui_headless_render_frame.argtypes = [C.c_uint16, C.c_uint16, C.POINTER(FfiDrawCmd), C.c_size_t, C.POINTER(C.c_char_p)]
+        lib.ratatui_headless_render_frame.restype = C.c_bool
+
     _cached_lib = lib
     return lib
+
+# ----- Additional enums for input/mouse/scrollbar -----
+
+FFI_MOUSE_KIND = {
+    "Down": 1,
+    "Up": 2,
+    "Drag": 3,
+    "Moved": 4,
+    "ScrollUp": 5,
+    "ScrollDown": 6,
+}
+
+FFI_MOUSE_BUTTON = {
+    "None": 0,
+    "Left": 1,
+    "Right": 2,
+    "Middle": 3,
+}
+
+# Orientation for optional scrollbar feature; presence depends on build features
+FFI_SCROLLBAR_ORIENT = {
+    "Vertical": 0,
+    "Horizontal": 1,
+}
