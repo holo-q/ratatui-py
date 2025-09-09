@@ -3,7 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/ratatui-py.svg)](https://pypi.org/project/ratatui-py/)
 ![Python Versions](https://img.shields.io/pypi/pyversions/ratatui-py.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-[![CI](https://github.com/holo-q/ratatui-py/actions/workflows/ci.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/ci.yml)
+[![Docs](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml)
 
 Fast, zero-build Python bindings for [ratatui_ffi], the C ABI for
 [Ratatui] — a modern Rust library for building rich terminal user
@@ -19,16 +19,27 @@ Key features:
 - Minimal overhead: direct FFI calls using `ctypes`.
  - Layout helpers: `margin`, `split_h`, `split_v` for quick UI splits.
 
-## Install
+## Installation
 
-By default, install tries to bundle the Rust shared library automatically:
+Fast path for most users:
 
-Order of strategies (first that works is used):
-- Use a prebuilt library if `RATATUI_FFI_LIB` is set.
-- Build from a local source if `RATATUI_FFI_SRC` is set (runs `cargo build --release`).
-- Clone and build `holo-q/ratatui-ffi` at `RATATUI_FFI_TAG` if network and toolchain are available.
+```
+pip install ratatui-py
+```
 
-The resulting shared library is packaged at `ratatui_py/_bundled/` and loaded automatically at runtime.
+Using uv for your project:
+
+```
+uv add ratatui-py
+```
+
+Try the interactive demos without installing into your environment:
+
+```
+uvx --from ratatui-py ratatui-py-demos
+# or a specific one
+uvx --from ratatui-py ratatui-py-dashboard
+```
 
 ## Quick start
 
@@ -87,28 +98,40 @@ with Terminal() as term:
     term.draw_gauge(g, (0,12,20,3))
 ```
 
-## CLI demos
+## Demos (via uvx, no install)
 
-After installation you can explore interactive demos:
-
-```
-ratatui-py-demos
-```
-
-Or run specific examples:
+The easiest way to try things out is with `uvx` — it downloads and runs the
+demo entry points in an isolated, ephemeral environment:
 
 ```
-ratatui-py-hello
-ratatui-py-widgets
-ratatui-py-life
-ratatui-py-dashboard
+uvx --from ratatui-py ratatui-py-demos
+uvx --from ratatui-py ratatui-py-dashboard
+uvx --from ratatui-py ratatui-py-hello
 ```
+
+If you’ve already installed the package, the same commands are available on
+your PATH (e.g., `ratatui-py-demos`).
+
 
 ## Environment variables
 - `RATATUI_FFI_LIB`: absolute path to a prebuilt shared library to bundle/load.
 - `RATATUI_FFI_SRC`: path to local ratatui-ffi source to build with cargo.
 - `RATATUI_FFI_GIT`: override git URL (default `https://github.com/holo-q/ratatui-ffi.git`).
 - `RATATUI_FFI_TAG`: git tag/commit to fetch for bundling (default `v0.1.5`).
+
+### Advanced installation and bundling
+
+If you need precise control over the bundled Rust library, you can direct how
+the shared library is sourced. On install, the package tries strategies in the
+following order until one succeeds:
+
+1) Use a prebuilt artifact when `RATATUI_FFI_LIB` points to a `.so/.dylib/.dll`.
+2) Build from local sources when `RATATUI_FFI_SRC` is set (runs `cargo build`).
+3) Clone and build `holo-q/ratatui-ffi` at `RATATUI_FFI_TAG`.
+
+The chosen library is copied into `ratatui_py/_bundled/` and auto‑loaded at
+runtime. Most users do not need this; it’s provided for reproducible builds
+and development workflows.
 
 ### Demo/recording behavior toggles
 - `RATATUI_PY_RECORDING=1`: optimize demo runner for recording. Enables inline mode, synchronized updates, and frame coalescing.
@@ -117,6 +140,44 @@ ratatui-py-dashboard
 - `RATATUI_PY_NO_CODE=1`: hide the right‑hand code pane in the demo hub to reduce churn and draw only the live demo.
 - `RATATUI_PY_SYNC=1`: force synchronized update bracketing even outside recording (usually not needed).
 - `RATATUI_FFI_NO_ALTSCR=1`: render inline (no alternate screen) so scrollback is preserved. The demo runner enables this by default.
+
+## Utilities for responsive apps
+
+The `ratatui_py.util` module provides helpers to keep your UI snappy under load:
+
+- `frame_begin(budget_ms=12)`: start a frame time budget. In heavy loops, periodically check `fb.should_yield()` and return to the event loop to avoid input backlog.
+
+- `BackgroundTask(fn, loop=False)`: run work in a thread. Use when your workload releases the GIL (e.g., FFI/Rust, NumPy, I/O). Call `task.start()`, do `task.peek()` each frame to get the latest result, and `task.stop()` on shutdown.
+
+- `ProcessTask(fn, loop=False, start_method='spawn')`: run CPU-bound work in a separate process (bypasses the GIL). The worker receives a context with:
+  - `ctx.recv_latest(timeout=0)`: read the most recent submitted job (drops stale ones).
+  - `ctx.publish(result)`: send back a result (older ones are dropped).
+  - `ctx.should_stop()`: check for cooperative shutdown.
+
+Example (looping worker):
+
+```python
+from ratatui_py import ProcessTask
+
+def worker(ctx):
+    params = None
+    while not ctx.should_stop():
+        msg = ctx.recv_latest(timeout=0.01)
+        if msg is not None:
+            params = msg
+        if params is None:
+            continue
+        result = do_heavy_compute(params)  # pure CPU ok here
+        ctx.publish(result)
+
+task = ProcessTask(worker, loop=True)
+task.start()
+task.submit({"zoom": 1.25})
+# In your render loop: latest = task.peek()
+# On shutdown: task.stop(join=True, terminate=True)
+```
+
+Tip: Prefer `BackgroundTask` when your computation releases the GIL; prefer `ProcessTask` for pure-Python CPU work where threading won’t help.
 
 ## Platform support
 - Linux: `x86_64` is tested; other targets may work with a compatible `ratatui_ffi` build.
