@@ -1,6 +1,0 @@
-[console_scripts]
-ratatui-py-dashboard = ratatui_py.demo_runner:run_dashboard
-ratatui-py-demos = ratatui_py.demo_runner:run_demo_hub
-ratatui-py-hello = ratatui_py.examples:hello_main
-ratatui-py-life = ratatui_py.examples:life_main
-ratatui-py-widgets = ratatui_py.examples:widgets_main

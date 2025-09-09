@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Virtual envs
+.venv/
+venv/
+
+# Build artifacts
+build/
+dist/
+wheelhouse/
+*.egg-info/
+
+# Local caches / temp
+tmp/
+.DS_Store
+
+# Ratatui FFI logs
+ratatui_ffi.log
+
+# Bundled native libs (kept in wheels, not in Git)
+src/ratatui_py/_bundled/*.so
+src/ratatui_py/_bundled/*.dylib
+src/ratatui_py/_bundled/*.dll
