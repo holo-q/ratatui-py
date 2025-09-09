@@ -4,6 +4,7 @@
 ![Python Versions](https://img.shields.io/pypi/pyversions/ratatui-py.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 [![Docs](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml)
+[![CI](https://github.com/holo-q/ratatui-py/actions/workflows/ci.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/ci.yml)
 
 Fast, zero-build Python bindings for [ratatui_ffi], the C ABI for
 [Ratatui] — a modern Rust library for building rich terminal user
@@ -21,13 +22,7 @@ Key features:
 
 ## Installation
 
-Fast path for most users:
-
-```
-pip install ratatui-py
-```
-
-Using uv for your project:
+Use uv for a fast, reproducible install:
 
 ```
 uv add ratatui-py
@@ -302,9 +297,51 @@ If you still hit rendering anomalies or crashes, please open an issue with:
 - A minimal script to reproduce.
 
 ## Why ratatui-py?
-- Bring Ratatui’s modern TUI widgets and layout engine to Python.
-- Avoid ncurses boilerplate; focus on your UI and event loop.
-- Keep Python for app logic while leveraging Rust for rendering.
+
+Build rich, fast TUIs in Python without giving up a modern rendering engine.
+
+- Performance‑first core: rendering and layout are powered by a Rust engine, so
+  complex scenes, charts, and animations stay smooth even at high FPS. Python
+  drives app logic; Rust does the pixel pushing.
+- Batteries included UI: tables, lists, gauges, charts, sparklines, blocks,
+  borders, and a flexible layout system (constraints, margins, splits).
+- Record‑ready output: synchronized updates, inline mode (no alt‑screen), and
+  frame coalescing produce clean casts in asciinema and similar tools.
+- Practical ergonomics: a small, idiomatic wrapper (`Terminal`, widgets, and
+  `DrawCmd`) and layout helpers (`split_h`, `split_v`, `margin`).
+- Testability: headless render helpers generate text snapshots for fast,
+  deterministic tests in CI without a TTY.
+
+How this differs from common pure‑Python TUI stacks (respectfully, no names):
+
+- Rendering model
+  - ratatui‑py: double‑buffered composition with batched draws; minimizes
+    cursor movement and reduces flicker/tearing.
+  - Pure‑Python stacks often stream writes and cursor moves directly; simple
+    UIs are fine, but complex scenes can require extra care to stay flicker‑free.
+
+- Throughput and headroom
+  - ratatui‑py: high throughput under load (widgets + charts at 30–60 FPS) by
+    offloading rendering to Rust.
+  - Pure‑Python: perfectly adequate for text‑heavy apps; very dense scenes or
+    heavy per‑frame styling can stutter without extra optimization.
+
+- Widgets and visuals
+  - ratatui‑py: ships with performance‑oriented widgets (charts/sparklines,
+    gauges, tables) and consistent borders/colors across terminals.
+  - Pure‑Python: highly hackable, often favoring line‑editing/REPL workflows;
+    advanced visuals may need custom drawing code.
+
+- Packaging trade‑offs
+  - ratatui‑py: uses a small shared library (bundled wheels or build‑from‑source
+    paths provided). In exchange, you get Rust‑level rendering speed.
+  - Pure‑Python: zero external binary; simplest to vendor or embed.
+
+When to pick which (rules of thumb)
+- Choose ratatui‑py if you want smooth charts/dashboards, dense widgets,
+  flicker‑free recording, or you expect to push the terminal hard.
+- Choose a Python‑only stack when you want a tiny dependency footprint, focus
+  on line editing/REPL flows, or prefer fully dynamic patch‑and‑reload cycles.
 
 ## Links
 - PyPI: https://pypi.org/project/ratatui-py/
