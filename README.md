@@ -189,6 +189,7 @@ left, right = split_v_rect(body, 0.4, 0.6, gap=1)
 ```
 
 - Color enum with `Style`: write `Style(fg=Color.LightBlue)` instead of raw integers.
+  Fluent helpers for emphasis: `Style().bold().underlined()` (uses `Mod` flags).
 
 - Typed events: prefer `next_event_typed()` for dataclass events with enums:
 
@@ -213,6 +214,26 @@ with Terminal() as term:
         f.paragraph(p1, Rect(0, 0, 20, 3))
         f.paragraph(p2, Rect(20, 0, 20, 3))
     # f.ok is True/False depending on `draw_frame`
+```
+
+- Key binding helper:
+
+```python
+from ratatui_py import Terminal, Keymap, KeyCode, KeyMods
+
+km = Keymap()
+km.bind(KeyCode.Left, KeyMods.NONE, lambda e: print('←'))
+
+with Terminal() as term:
+    evt = term.next_event_typed(100)
+    if evt:
+        km.handle(evt)
+```
+
+- Convenience prelude:
+
+```python
+from ratatui_py.prelude import *  # Terminal, Paragraph, Rect, Color, etc.
 ```
 
 ## Platform support
