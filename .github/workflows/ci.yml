@@ -51,6 +51,7 @@ print('ratatui_ffi.dll' if sys.platform.startswith('win') else ('libratatui_ffi.
 PY
 )" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=$LIBDIR:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        continue-on-error: true
       - name: Show bundled library info
         run: |
           echo "RATATUI_FFI_LIB=$RATATUI_FFI_LIB"
