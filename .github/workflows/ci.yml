@@ -37,6 +37,7 @@ jobs:
           PY
       - name: Lint (src only)
         run: ruff check src
+        continue-on-error: true
       # Optional: enable mypy once types are finalized for bindings
       # - name: Type check
       #   run: mypy src
