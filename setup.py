@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 from setuptools import setup
 from setuptools.command.build_py import build_py as _build_py
+from setuptools.command.develop import develop as _develop
 
 PKG_ROOT = Path(__file__).parent
 SRC_DIR = PKG_ROOT / "src" / "ratatui_py"
@@ -54,29 +55,39 @@ def clone_and_build() -> Path:
         return build_from_src(Path(td))
 
 
+def ensure_bundled_lib():
+    libname = plat_lib_name()
+    bundled = BUNDLED_DIR / libname
+    if RATATUI_FFI_LIB and Path(RATATUI_FFI_LIB).exists():
+        copy_lib_to_bundle(Path(RATATUI_FFI_LIB))
+    elif RATATUI_FFI_SRC and Path(RATATUI_FFI_SRC).exists():
+        built = build_from_src(Path(RATATUI_FFI_SRC))
+        copy_lib_to_bundle(built)
+    elif not bundled.exists():
+        try:
+            built = clone_and_build()
+            copy_lib_to_bundle(built)
+        except Exception as e:
+            print("Warning: Could not bundle ratatui_ffi automatically:", e)
+            print("You can set RATATUI_FFI_LIB to a prebuilt library or RATATUI_FFI_SRC to a local source and rebuild.")
+
+
 class build_py(_build_py):
     def run(self):
-        # Prepare a bundled library if not already present
-        libname = plat_lib_name()
-        bundled = BUNDLED_DIR / libname
-        if RATATUI_FFI_LIB and Path(RATATUI_FFI_LIB).exists():
-            copy_lib_to_bundle(Path(RATATUI_FFI_LIB))
-        elif RATATUI_FFI_SRC and Path(RATATUI_FFI_SRC).exists():
-            built = build_from_src(Path(RATATUI_FFI_SRC))
-            copy_lib_to_bundle(built)
-        elif not bundled.exists():
-            try:
-                built = clone_and_build()
-                copy_lib_to_bundle(built)
-            except Exception as e:
-                print("Warning: Could not bundle ratatui_ffi automatically:", e)
-                print("You can set RATATUI_FFI_LIB to a prebuilt library or RATATUI_FFI_SRC to a local source and rebuild.")
+        ensure_bundled_lib()
+        super().run()
+
+
+class develop(_develop):
+    def run(self):
+        # Ensure the bundled library exists for editable installs too
+        ensure_bundled_lib()
         super().run()
 
 
 if __name__ == "__main__":
     setup(
         name="ratatui-py",
-        cmdclass={"build_py": build_py},
+        cmdclass={"build_py": build_py, "develop": develop},
         package_data={"ratatui_py": ["_bundled/*"]},
     )

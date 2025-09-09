@@ -1,0 +1,3 @@
+[console_scripts]
+ratatui-py-hello = ratatui_py.examples:hello_main
+ratatui-py-widgets = ratatui_py.examples:widgets_main
