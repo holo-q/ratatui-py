@@ -81,9 +81,11 @@ ignore = [
   "E701",  # multiple statements on one line (colon)
   "E702",  # multiple statements on one line (semicolon)
   "E402",  # module import not at top (demos/ffi quirks)
+  "E401",  # multiple imports on one line (demo brevity)
   "F401",  # imported but unused (allow local import grouping)
   "F841",  # assigned but unused (some demo scratch vars)
   "F811",  # redefinition (duplicated demo helpers)
+  "E741",  # ambiguous variable names (demo locals)
   "I001",  # import sorting (allow in-function import blocks)
 ]
 
