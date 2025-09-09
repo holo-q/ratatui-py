@@ -18,7 +18,7 @@ from ._ffi import (
     FFI_MOUSE_BUTTON,
     FFI_WIDGET_KIND,
 )
-from .types import RectLike
+from .types import RectLike, Color, KeyCode, KeyMods, MouseKind, MouseButton
 
 @dataclass
 class Style:
@@ -171,6 +171,42 @@ class Terminal:
                 "mods": int(evt.mouse_mods),
             }
         return {"kind": "none"}
+
+    # Typed event API for better IDE hints and fewer stringly-typed checks
+    def next_event_typed(self, timeout_ms: int):
+        evt = FfiEvent()
+        ok = self._lib.ratatui_next_event(C.c_uint64(timeout_ms), C.byref(evt))
+        if not ok:
+            return None
+        if evt.kind == FFI_EVENT_KIND["KEY"]:
+            return (
+                __import__('ratatui_py.types', fromlist=['KeyEvt']).KeyEvt(
+                    kind="key",
+                    code=KeyCode(int(evt.key.code)),
+                    ch=int(evt.key.ch),
+                    mods=KeyMods(int(evt.key.mods)),
+                )
+            )
+        if evt.kind == FFI_EVENT_KIND["RESIZE"]:
+            return (
+                __import__('ratatui_py.types', fromlist=['ResizeEvt']).ResizeEvt(
+                    kind="resize",
+                    width=int(evt.width),
+                    height=int(evt.height),
+                )
+            )
+        if evt.kind == FFI_EVENT_KIND["MOUSE"]:
+            return (
+                __import__('ratatui_py.types', fromlist=['MouseEvt']).MouseEvt(
+                    kind="mouse",
+                    x=int(evt.mouse_x),
+                    y=int(evt.mouse_y),
+                    mouse_kind=MouseKind(int(evt.mouse_kind)),
+                    mouse_btn=MouseButton(int(evt.mouse_btn)),
+                    mods=KeyMods(int(evt.mouse_mods)),
+                )
+            )
+        return None
 
     def close(self) -> None:
         if getattr(self, "_handle", None):

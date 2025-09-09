@@ -38,7 +38,11 @@ from .wrappers import (
 )
 from .layout import margin, split_h, split_v, margin_rect, split_h_rect, split_v_rect
 from .util import frame_begin, BackgroundTask, ProcessTask
-from .types import Rect, RectLike, Point, Size
+from .types import (
+    Rect, RectLike, Point, Size,
+    Color, KeyCode, KeyMods, MouseKind, MouseButton,
+    KeyEvt, ResizeEvt, MouseEvt, Event,
+)
 
 __all__ = [
     "load_library",
@@ -71,6 +75,15 @@ __all__ = [
     "RectLike",
     "Point",
     "Size",
+    "Color",
+    "KeyCode",
+    "KeyMods",
+    "MouseKind",
+    "MouseButton",
+    "KeyEvt",
+    "ResizeEvt",
+    "MouseEvt",
+    "Event",
     "headless_render_paragraph",
     "headless_render_list",
     "headless_render_table",
