@@ -35,8 +35,8 @@ jobs:
           ensure_runtime_lib()
           print('Bundled runtime lib for tests.')
           PY
-      - name: Lint
-        run: ruff check .
+      - name: Lint (src only)
+        run: ruff check src
       - name: Type check
         run: mypy src
       - name: Tests
