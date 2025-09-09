@@ -35,6 +35,20 @@ jobs:
           ensure_runtime_lib()
           print('Bundled runtime lib for tests.')
           PY
+          # Export path to bundled library for reliable loading during tests
+          LIBDIR="$(python - <<'PY'
+import pathlib
+import ratatui_py, sys
+p = pathlib.Path(ratatui_py.__file__).resolve().parent / '_bundled'
+print(p)
+PY
+)"
+          echo "RATATUI_FFI_LIB=$LIBDIR/$(python - <<'PY'
+import sys
+print('ratatui_ffi.dll' if sys.platform.startswith('win') else ('libratatui_ffi.dylib' if sys.platform=='darwin' else 'libratatui_ffi.so'))
+PY
+)" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$LIBDIR:$LD_LIBRARY_PATH" >> $GITHUB_ENV
       - name: Lint (src only)
         run: ruff check src
         continue-on-error: true
