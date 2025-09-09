@@ -19,6 +19,7 @@ dependencies = []
 [project.scripts]
 ratatui-py-hello = "ratatui_py.examples:hello_main"
 ratatui-py-widgets = "ratatui_py.examples:widgets_main"
+ratatui-py-life = "ratatui_py.examples:life_main"
 
 [project.urls]
 Homepage = "https://github.com/holo-q/ratatui-py"
