@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ratatui-py"
+version = "0.1.0"
+description = "Python bindings for ratatui_ffi (Ratatui C ABI) via ctypes"
+readme = "README.md"
+authors = [{ name = "holo-q" }]
+requires-python = ">=3.8"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/holo-q/ratatui-py"
+Repository = "https://github.com/holo-q/ratatui-py"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["ratatui_py*"]
+exclude = ["tests*"]
+
+[tool.uv]
+dev-dependencies = [
+  "ruff>=0.4",
+  "mypy>=1.10",
+  "pytest>=8",
+]
+
+[tool.uv.scripts]
+build-lib = "python setup.py build_py"
+install-editable = "python -m pip install -e ."
+example-hello = "python examples/hello_paragraph.py"
+headless-demo = "python -c 'from ratatui_py import Paragraph; from ratatui_py.wrappers import headless_render_paragraph as R; p=Paragraph.from_text(\"hi\npy\"); print(R(8,3,p))'"
