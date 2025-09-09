@@ -39,9 +39,3 @@ dev-dependencies = [
   "mypy>=1.10",
   "pytest>=8",
 ]
-
-# [tool.uv.scripts] (not supported by current uv; use project.scripts instead)
-build-lib = "python setup.py build_py"
-install-editable = "python -m pip install -e ."
-example-hello = "python examples/hello_paragraph.py"
-headless-demo = "python -c 'from ratatui_py import Paragraph; from ratatui_py.wrappers import headless_render_paragraph as R; p=Paragraph.from_text(\"hi\npy\"); print(R(8,3,p))'"
