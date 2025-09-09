@@ -174,6 +174,33 @@ task.submit({"zoom": 1.25})
 
 Tip: Prefer `BackgroundTask` when your computation releases the GIL; prefer `ProcessTask` for pure-Python CPU work where threading won’t help.
 
+## Typed API (developer ergonomics)
+
+Use the typed helpers for clear, discoverable code and great editor support:
+
+- Rect/Point/Size dataclasses and `RectLike` union — pass either a `Rect` or a tuple to draw calls; layout helpers also offer typed variants:
+
+```python
+from ratatui_py import Rect, margin_rect, split_v_rect
+
+area = Rect(0, 0, 80, 24)
+body = margin_rect(area, all=1)
+left, right = split_v_rect(body, 0.4, 0.6, gap=1)
+```
+
+- Color enum with `Style`: write `Style(fg=Color.LightBlue)` instead of raw integers.
+
+- Typed events: prefer `next_event_typed()` for dataclass events with enums:
+
+```python
+from ratatui_py import Terminal, KeyCode
+
+with Terminal() as term:
+    evt = term.next_event_typed(100)
+    if evt and evt.kind == 'key' and evt.code == KeyCode.Left:
+        ...  # move selection
+```
+
 ## Platform support
 - Linux: `x86_64` is tested; other targets may work with a compatible `ratatui_ffi` build.
 - macOS: Apple Silicon and Intel are supported via `dylib`.
