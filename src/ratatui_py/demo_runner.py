@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import sys
 import time
 import inspect
 from typing import Optional, Tuple, List
@@ -17,6 +18,50 @@ from . import (
 )
 from . import examples as ex
 from .layout import margin, split_h, split_v
+
+# Recording-friendly knobs
+_REC = bool(os.getenv("ASCIINEMA_REC") or os.getenv("RATATUI_PY_RECORDING"))
+_FPS = int(os.getenv("RATATUI_PY_FPS", "30"))
+_STATIC = os.getenv("RATATUI_PY_STATIC", "0") not in ("0", "false", "False", "")
+_NO_CODE = os.getenv("RATATUI_PY_NO_CODE", "1" if _REC else "0") not in ("0", "false", "False", "")
+
+# Prefer inline mode (preserve scrollback) by default
+os.environ.setdefault("RATATUI_FFI_NO_ALTSCR", "1")
+
+
+def _sync_start():
+    # iTerm2/kitty synchronized output; harmless elsewhere
+    if _REC or os.getenv("RATATUI_PY_SYNC"):
+        try:
+            sys.stdout.write("\x1b[?2026h")
+            sys.stdout.flush()
+        except Exception:
+            pass
+
+
+def _sync_end():
+    if _REC or os.getenv("RATATUI_PY_SYNC"):
+        try:
+            sys.stdout.write("\x1b[?2026l")
+            sys.stdout.flush()
+        except Exception:
+            pass
+
+
+def _cursor_hide():
+    try:
+        sys.stdout.write("\x1b[?25l")
+        sys.stdout.flush()
+    except Exception:
+        pass
+
+
+def _cursor_show():
+    try:
+        sys.stdout.write("\x1b[?25h")
+        sys.stdout.flush()
+    except Exception:
+        pass
 
 
 class DemoBase:
@@ -185,22 +230,35 @@ class DashboardDemo(DemoBase):
     def on_key(self, evt: dict) -> None:
         if evt.get("kind") != "key":
             return
-        ch = evt.get("ch", 0)
-        if not ch:
-            return
-        c = chr(ch).lower()
-        if c == 'a':
+        code = int(evt.get("code", 0))
+        ch = int(evt.get("ch", 0))
+        # Support both arrow keys (codes) and vim-style chars
+        if code == 2:  # Left
             self.tab_idx = (self.tab_idx - 1) % len(self.tabs)
-        elif c == 'd':
+            return
+        if code in (3, 9):  # Right or Tab
             self.tab_idx = (self.tab_idx + 1) % len(self.tabs)
-        elif c == 'j':
+            return
+        if code == 5:  # Down
             self.sel = (self.sel + 1) % len(self.services)
-        elif c == 'k':
+            return
+        if code == 4:  # Up
             self.sel = (self.sel - 1) % len(self.services)
-        elif c == 'r':
-            # randomize a small spike
-            self.cpu = min(0.99, self.cpu + 0.2)
-            self.mem = min(0.99, self.mem + 0.15)
+            return
+        if ch:
+            c = chr(ch).lower()
+            if c == 'a':
+                self.tab_idx = (self.tab_idx - 1) % len(self.tabs)
+            elif c == 'd':
+                self.tab_idx = (self.tab_idx + 1) % len(self.tabs)
+            elif c == 'j':
+                self.sel = (self.sel + 1) % len(self.services)
+            elif c == 'k':
+                self.sel = (self.sel - 1) % len(self.services)
+            elif c == 'r':
+                # randomize a small spike
+                self.cpu = min(0.99, self.cpu + 0.2)
+                self.mem = min(0.99, self.mem + 0.15)
 
     def tick(self, dt: float) -> None:
         self.t += dt
@@ -319,10 +377,26 @@ class DashboardDemo(DemoBase):
 
 def _load_source(obj) -> str:
     try:
-        src = inspect.getsource(obj)
+        if obj is None:
+            raise ValueError("no source_obj")
+        # If given a bound/unbound function from a class, prefer the class source
+        if inspect.isfunction(obj) or inspect.ismethod(obj):
+            qn = getattr(obj, "__qualname__", "")
+            globs = getattr(obj, "__globals__", {})
+            if "." in qn:
+                cls_name = qn.split(".")[0]
+                cls = globs.get(cls_name)
+                if inspect.isclass(cls):
+                    return inspect.getsource(cls).rstrip("\n")
+        if inspect.isclass(obj) or inspect.isfunction(obj) or inspect.ismethod(obj):
+            return inspect.getsource(obj).rstrip("\n")
+        # Fallback: module source
+        mod = inspect.getmodule(obj)
+        if mod is not None:
+            return inspect.getsource(mod).rstrip("\n")
     except Exception:
-        src = "<source unavailable>"
-    return src.rstrip("\n")
+        pass
+    return "<source unavailable>"
 
 
 def _render_code(term: Terminal, rect: Tuple[int, int, int, int], title: str, code: str, scroll: int) -> None:
@@ -354,6 +428,7 @@ def run_demo_hub() -> None:
     ChatDemo.source_obj = getattr(ChatDemo, 'render_cmds', ChatDemo.render)
     PlasmaDemo.source_obj = getattr(PlasmaDemo, 'render_cmds', PlasmaDemo.render)
     MandelbrotDemo.source_obj = getattr(MandelbrotDemo, 'render_cmds', MandelbrotDemo.render)
+    WidgetSceneDemo.source_obj = getattr(WidgetSceneDemo, 'render_cmds', WidgetSceneDemo.render)
 
     demos: List[DemoBase] = [
         HelloDemo(),
@@ -368,141 +443,381 @@ def run_demo_hub() -> None:
         ChatDemo(),
         PlasmaDemo(),
         MandelbrotDemo(),
+        WidgetSceneDemo(),
+        FireDemo(),
+        TunnelDemo(),
+        CubeDemo(),
     ]
     idx = 0
     code_scroll = 0
     last = time.monotonic()
+    frame_budget = max(1, int(1000 / max(1, _FPS)))
+    # Caches to reduce per-frame work
+    src_cache: dict[object, tuple[str, list[str]]] = {}
+    tokens_cache: dict[object, list[list[tuple[str, str]]]] = {}
+    last_title_w = -1
+    ptitle = None
+    last_nav = {"w": -1, "idx": -1, "names": [], "pnav": None}
+    last_draw = 0.0
+    last_draw = 0.0
     with Terminal() as term:
         while True:
             now = time.monotonic()
             dt = now - last
             last = now
-
+            if _STATIC:
+                dt = 0.0
             width, height = term.size()
-            # layout: left demo area, right code pane
+            # layout: title bar (1), navbar (1), then left demo area + right code pane
             # keep at least 10 cols for demo; clamp code width
             min_demo = 10
-            code_w_target = max(20, int(width * 0.42))
+            code_w_target = 0 if _NO_CODE else max(20, int(width * 0.42))
             code_w_max = max(0, width - min_demo)
             code_w = min(code_w_target, code_w_max)
             demo_w = max(min_demo, width - code_w)
-            demo_rect = (0, 0, demo_w, height)
-            code_rect = (demo_w, 0, code_w, height)
+
+            # Reserve rows for title and navbar if possible
+            use_title = height >= 1
+            use_nav = height >= 2
+            title_h = 1 if use_title else 0
+            nav_h = 1 if use_nav else 0
+            body_h = max(0, height - title_h - nav_h)
+
+            title_rect = (0, 0, width, title_h) if use_title else (0, 0, 0, 0)
+            nav_rect = (0, title_h, width, nav_h) if use_nav else (0, 0, 0, 0)
+            body_y = title_h + nav_h
+            demo_rect = (0, body_y, demo_w, body_h)
+            code_rect = (demo_w, body_y, code_w, body_h)
 
             demo = demos[idx]
             demo.tick(dt)
 
-            # Build code pane content
-            src = _load_source(demo.source_obj)
-            code_lines = src.splitlines()
-            vis = code_lines[code_scroll:]
-            pcode = Paragraph.new_empty()
-            # naive syntax highlighting for Python-like code (no extra deps)
-            kw = {
-                'def','class','return','if','elif','else','for','while','try','except','finally','from','import','as','with','lambda','True','False','None','yield','in','and','or','not'
-            }
-            from . import Style, FFI_COLOR
-            def emit_token(t: str, kind: str):
-                if kind == 'kw': st = Style(fg=FFI_COLOR['LightMagenta'])
-                elif kind == 'str': st = Style(fg=FFI_COLOR['LightYellow'])
-                elif kind == 'com': st = Style(fg=FFI_COLOR['DarkGray'])
-                elif kind == 'num': st = Style(fg=FFI_COLOR['LightCyan'])
-                elif kind == 'dec': st = Style(fg=FFI_COLOR['LightGreen'])
-                else: st = Style()
-                pcode.append_span(t, st)
-            import string
-            ident_chars = string.ascii_letters + string.digits + '_'
-            for line in vis:
-                i = 0
-                n = len(line)
-                in_str = False
-                sd = ''
-                while i < n:
-                    ch = line[i]
-                    if in_str:
-                        j = i
-                        while j < n and line[j] != sd:
-                            # naive: no escaping handling
-                            j += 1
-                        j = min(n, j+1)
-                        emit_token(line[i:j], 'str')
-                        i = j
-                        in_str = False
-                        continue
-                    if ch == '#' :
-                        emit_token(line[i:], 'com')
-                        i = n
+            # Build title bar spanning full width
+            if use_title:
+                from . import Style, FFI_COLOR
+                title_bg = FFI_COLOR.get('DarkGray', 0x40_40_40)
+                title_fg = FFI_COLOR.get('White', 0xFF_FF_FF)
+                max_w = title_rect[2]
+                if last_title_w != max_w:
+                    ptitle = Paragraph.new_empty()
+                    cur_w = 0
+                    def add_t(text: str, style: Style):
+                        nonlocal cur_w
+                        if max_w <= 0:
+                            return
+                        tw = len(text)
+                        if cur_w + tw > max_w:
+                            text = text[: max(0, max_w - cur_w)]
+                            tw = len(text)
+                        if tw > 0:
+                            ptitle.append_span(text, style)
+                            cur_w += tw
+                    title = " ratatui-py demo "
+                    add_t(title, Style(fg=title_fg, bg=title_bg))
+                    if cur_w < max_w:
+                        add_t(" " * (max_w - cur_w), Style(bg=title_bg))
+                    last_title_w = max_w
+                title_cmd = DrawCmd.paragraph(ptitle, title_rect)
+            else:
+                title_cmd = None
+
+            # Build top navbar as contiguous blocks: inactive light bg, active vivid bg
+            if use_nav:
+                from . import Style, FFI_COLOR
+                accent = FFI_COLOR.get('LightBlue', 0x00_00_FF)
+                bg_inactive = FFI_COLOR.get('Gray', 0x80_80_80)
+                fg_active = FFI_COLOR.get('Black', 0x00_00_00)
+                fg_inactive = FFI_COLOR.get('Black', 0x00_00_00)
+                names = [d.name for d in demos]
+                max_w = nav_rect[2]
+                need = last_nav["w"] != max_w or last_nav["idx"] != idx or last_nav["names"] != names
+                if need:
+                    pnav = Paragraph.new_empty()
+                    cur_w = 0
+                    def add_span(text: str, style: Style):
+                        nonlocal cur_w
+                        if max_w <= 0:
+                            return
+                        tw = len(text)
+                        if cur_w + tw > max_w:
+                            text = text[: max(0, max_w - cur_w)]
+                            tw = len(text)
+                        if tw > 0:
+                            pnav.append_span(text, style)
+                            cur_w += tw
+                    for i, nm in enumerate(names):
+                        active = (i == idx)
+                        if active:
+                            add_span(nm, Style(fg=fg_active, bg=accent))
+                        else:
+                            add_span(nm, Style(fg=fg_inactive, bg=bg_inactive))
+                        if i != len(names) - 1:
+                            add_span(' ', Style())
+                    last_nav.update({"w": max_w, "idx": idx, "names": names[:], "pnav": pnav})
+                else:
+                    pnav = last_nav["pnav"]
+                nav_cmd = DrawCmd.paragraph(pnav, nav_rect)
+            else:
+                nav_cmd = None
+
+            # Build code pane content (cached source and tokenized lines)
+            if _NO_CODE:
+                demo_cmds = demo.render_cmds(demo_rect)
+                if demo_cmds:
+                    cmds = []
+                    if title_cmd is not None:
+                        cmds.append(title_cmd)
+                    if nav_cmd is not None:
+                        cmds.append(nav_cmd)
+                    cmds.extend(demo_cmds)
+                    _sync_start(); ok = term.draw_frame(cmds); _sync_end()
+                    if not ok:
+                        demo.render(term, demo_rect)
+                else:
+                    if use_title:
+                        _sync_start(); term.draw_paragraph(ptitle, title_rect); _sync_end()
+                    if use_nav:
+                        _sync_start(); term.draw_paragraph(pnav, nav_rect); _sync_end()
+                    _sync_start(); demo.render(term, demo_rect); _sync_end()
+                # Input handling (fast path) and lightweight nav
+                evt = term.next_event(min(20, frame_budget))
+                if evt and evt.get("kind") == "key":
+                    code = int(evt.get("code", 0))
+                    ch = int(evt.get("ch", 0))
+                    if ch and chr(ch).lower() == 'q':
                         break
-                    if ch in ('"', "'"):
-                        in_str = True; sd = ch; i += 0  # handled next loop
-                        # start string marker
-                        i += 0
-                        continue
-                    if ch == '@':
-                        j = i+1
-                        while j < n and line[j] in ident_chars:
-                            j += 1
-                        emit_token(line[i:j], 'dec')
-                        i = j
-                        continue
-                    if ch.isalpha() or ch == '_':
-                        j = i+1
-                        while j < n and line[j] in ident_chars:
-                            j += 1
-                        word = line[i:j]
-                        emit_token(word, 'kw' if word in kw else 'id')
-                        i = j
-                        continue
-                    if ch.isdigit():
-                        j = i+1
-                        while j < n and line[j].isdigit():
-                            j += 1
-                        emit_token(line[i:j], 'num')
-                        i = j
-                        continue
-                    emit_token(ch, 'other')
-                    i += 1
+                    # left/right/tab to switch demos
+                    if code == 2:  # Left
+                        idx = (idx - 1) % len(demos)
+                    elif code in (3, 9):  # Right or Tab
+                        idx = (idx + 1) % len(demos)
+                    else:
+                        demo.on_key(evt)
+                else:
+                    if _REC:
+                        now3 = time.monotonic()
+                        sleep_ms = frame_budget - int((now3 - now) * 1000)
+                        if sleep_ms > 0:
+                            time.sleep(sleep_ms / 1000.0)
+                # Skip the rest of the code-pane path
+                continue
+            src_key = getattr(demo, 'source_obj', None) or demo.__class__
+            if src_key not in src_cache:
+                src = _load_source(src_key)
+                lines = src.splitlines()
+                src_cache[src_key] = (src, lines)
+                # Tokenize once for all frames
+                kw = {
+                    'def','class','return','if','elif','else','for','while','try','except','finally','from','import','as','with','lambda','True','False','None','yield','in','and','or','not'
+                }
+                import string
+                ident_chars = set(string.ascii_letters + string.digits + '_')
+                toks_all = []
+                for line in lines:
+                    i = 0; n = len(line); in_str = False; sd = ''
+                    row = []
+                    while i < n:
+                        ch = line[i]
+                        if in_str:
+                            j = i
+                            while j < n and line[j] != sd:
+                                j += 1
+                            j = min(n, j+1)
+                            row.append((line[i:j], 'str'))
+                            i = j; in_str = False; continue
+                        if ch == '#':
+                            row.append((line[i:], 'com'))
+                            i = n; break
+                        if ch in ('"', "'"):
+                            in_str = True; sd = ch; continue
+                        if ch == '@':
+                            j = i+1
+                            while j < n and line[j] in ident_chars:
+                                j += 1
+                            row.append((line[i:j], 'dec'))
+                            i = j; continue
+                        if ch.isalpha() or ch == '_':
+                            j = i+1
+                            while j < n and line[j] in ident_chars:
+                                j += 1
+                            word = line[i:j]
+                            row.append((word, 'kw' if word in kw else 'id'))
+                            i = j; continue
+                        if ch.isdigit():
+                            j = i+1
+                            while j < n and line[j].isdigit():
+                                j += 1
+                            row.append((line[i:j], 'num'))
+                            i = j; continue
+                        row.append((ch, 'other'))
+                        i += 1
+                    toks_all.append(row)
+                tokens_cache[src_key] = toks_all
+            src, code_lines = src_cache[src_key]
+            # determine visible slice and scrollbar
+            max_vis = max(1, code_rect[3] - 2)
+            code_scroll = max(0, min(code_scroll, max(0, len(code_lines) - max_vis)))
+            pcode = Paragraph.new_empty()
+            from . import Style, FFI_COLOR
+            styles = {
+                'kw': Style(fg=FFI_COLOR['LightMagenta']),
+                'str': Style(fg=FFI_COLOR['LightYellow']),
+                'com': Style(fg=FFI_COLOR['DarkGray']),
+                'num': Style(fg=FFI_COLOR['LightCyan']),
+                'dec': Style(fg=FFI_COLOR['LightGreen']),
+                'id': Style(),
+                'other': Style(),
+            }
+            toks_all = tokens_cache[src_key]
+            start = code_scroll
+            end = min(len(code_lines), code_scroll + max_vis)
+            for line_idx in range(start, end):
+                for t, kind in toks_all[line_idx]:
+                    pcode.append_span(t, styles.get(kind) or Style())
                 pcode.line_break()
+            # build a simple ASCII scrollbar on the far-right of code pane
+            sb_cmd = []
+            total = max(1, len(code_lines))
+            bar_h = max(1, code_rect[3])
+            # position of thumb within bar
+            thumb_h = max(1, int(bar_h * min(1.0, max_vis / total)))
+            thumb_y = int((bar_h - thumb_h) * (code_scroll / max(1, total - max_vis))) if total > max_vis else 0
+            sb_lines = []
+            for j in range(bar_h):
+                sb_lines.append('█' if thumb_y <= j < thumb_y + thumb_h else '│')
+            sb_rect = (code_rect[0] + max(0, code_rect[2]-1), code_rect[1], 1, code_rect[3])
+            pscroll = Paragraph.from_text("\n".join(sb_lines))
             pcode.set_block_title(f"{demo.name} – Source", True)
 
             # If the demo provides batched commands, render both panes in one frame.
             # Otherwise, draw code first and let the demo render itself.
             demo_cmds = demo.render_cmds(demo_rect)
+            # Optionally coalesce draws in static mode to avoid visible flashing
+            if _STATIC and (now - last_draw) < 0.10:
+                evt = term.next_event(min(20, frame_budget))
+                if evt and evt.get("kind") == "key":
+                    # process below as usual
+                    pass
+                else:
+                    # Skip drawing this cycle
+                    continue
+
             if demo_cmds:
-                cmds = [DrawCmd.paragraph(pcode, code_rect)] + demo_cmds
+                cmds = []
+                if title_cmd is not None:
+                    cmds.append(title_cmd)
+                if nav_cmd is not None:
+                    cmds.append(nav_cmd)
+                cmds.extend([DrawCmd.paragraph(pcode, code_rect), DrawCmd.paragraph(pscroll, sb_rect)])
+                cmds.extend(demo_cmds)
+                _sync_start()
                 ok = term.draw_frame(cmds)
+                _sync_end()
                 if not ok:
                     demo.render(term, demo_rect)
             else:
+                # Bracket the entire multi-call frame in one synchronized update
+                _sync_start()
+                if use_title:
+                    term.draw_paragraph(ptitle, title_rect)
+                if use_nav:
+                    term.draw_paragraph(pnav, nav_rect)
                 term.draw_paragraph(pcode, code_rect)
                 demo.render(term, demo_rect)
+                _sync_end()
+            last_draw = now
 
-            # input handling
-            evt = term.next_event(50)
+            # input handling with event drain to avoid backlog
+            evt = term.next_event(min(20, frame_budget))
+            if _REC and not evt:
+                now3 = time.monotonic()
+                sleep_ms = frame_budget - int((now3 - now) * 1000)
+                if sleep_ms > 0:
+                    time.sleep(sleep_ms / 1000.0)
             if evt:
                 if evt.get("kind") == "key":
-                    code = evt.get("code", 0)
-                    ch = evt.get("ch", 0)
-                    if code in (2,):  # Left
-                        idx = (idx - 1) % len(demos)
-                        code_scroll = 0
-                        continue
-                    if code in (3, 9):  # Right or Tab
-                        idx = (idx + 1) % len(demos)
-                        code_scroll = 0
-                        continue
-                    if ch:
-                        c = chr(ch).lower()
-                        if c == "q":
+                    nav_delta = 0
+                    scroll_delta = 0
+                    set_home = set_end = False
+                    quit_flag = False
+                    last_demo_evt = None
+
+                    def fold(e):
+                        nonlocal nav_delta, scroll_delta, set_home, set_end, quit_flag, last_demo_evt
+                        code = e.get("code", 0)
+                        ch = e.get("ch", 0)
+                        if code == 2:  # Left
+                            nav_delta -= 1
+                            return True
+                        if code in (3, 9):  # Right or Tab
+                            nav_delta += 1
+                            return True
+                        if code == 4:  # Up
+                            scroll_delta -= 1
+                            return True
+                        if code == 5:  # Down
+                            scroll_delta += 1
+                            return True
+                        if code == 12:  # PageUp
+                            scroll_delta -= max_vis
+                            return True
+                        if code == 13:  # PageDown
+                            scroll_delta += max_vis
+                            return True
+                        if code == 10:  # Home
+                            set_home = True
+                            set_end = False
+                            return True
+                        if code == 11:  # End
+                            set_end = True
+                            set_home = False
+                            return True
+                        if ch:
+                            c = chr(ch).lower()
+                            if c == 'q':
+                                quit_flag = True
+                                return True
+                            if c == 'w':
+                                scroll_delta -= 1
+                                return True
+                            if c == 's':
+                                scroll_delta += 1
+                                return True
+                        # Keep last non-navigation event for the demo
+                        last_demo_evt = e
+                        return False
+
+                    # Fold the first event then drain the rest non-blocking
+                    fold(evt)
+                    while True:
+                        e = term.next_event(0)
+                        if not e:
                             break
-                        if c == "w":
-                            code_scroll = max(0, code_scroll - 1)
+                        if e.get("kind") != "key":
+                            last_demo_evt = e
                             continue
-                        if c == "s":
-                            code_scroll += 1
-                            continue
-                    # pass to demo
-                    demo.on_key(evt)
+                        fold(e)
+
+                    if quit_flag:
+                        break
+                    if nav_delta != 0:
+                        idx = (idx + nav_delta) % len(demos)
+                        code_scroll = 0
+                        continue
+                    if set_home:
+                        code_scroll = 0
+                        continue
+                    if set_end:
+                        code_scroll = 10**9
+                        continue
+                    if scroll_delta != 0:
+                        if scroll_delta < 0:
+                            code_scroll = max(0, code_scroll + scroll_delta)
+                        else:
+                            code_scroll += scroll_delta
+                        continue
+                    if last_demo_evt is not None:
+                        demo.on_key(last_demo_evt)
 
 
 if __name__ == "__main__":
@@ -512,20 +827,59 @@ if __name__ == "__main__":
 def run_dashboard() -> None:
     demo = DashboardDemo()
     last = time.monotonic()
+    last_draw = 0.0
+    frame_budget = max(1, int(1000 / max(1, _FPS)))
     with Terminal() as term:
-        while True:
-            now = time.monotonic()
-            dt = now - last
-            last = now
-            demo.tick(dt)
-            w, h = term.size()
-            demo.render(term, (0, 0, w, h))
-            evt = term.next_event(50)
-            if evt and evt.get("kind") == "key":
-                ch = evt.get("ch", 0)
-                if ch and chr(ch).lower() == 'q':
+        _cursor_hide()
+        try:
+            while True:
+                now = time.monotonic()
+                dt = now - last
+                last = now
+                if _STATIC:
+                    dt = 0.0
+                # Handle input first for snappier response
+                pre_evt = term.next_event(min(10, frame_budget))
+                quit_flag = False
+                if pre_evt and pre_evt.get("kind") == "key":
+                    def handle(e):
+                        nonlocal quit_flag
+                        ch = int(e.get("ch", 0))
+                        if ch and chr(ch).lower() == 'q':
+                            quit_flag = True
+                        else:
+                            demo.on_key(e)
+                    handle(pre_evt)
+                    # Drain any repeats without waiting
+                    while True:
+                        e = term.next_event(0)
+                        if not e:
+                            break
+                        if e.get("kind") != "key":
+                            continue
+                        handle(e)
+                if quit_flag:
                     break
-                demo.on_key(evt)
+                demo.tick(dt)
+                w, h = term.size()
+                # Coalesce draws in static mode to minimize flashing when idle
+                if _STATIC and (now - last_draw) < 0.05 and not pre_evt:
+                    continue
+                # Prefer batched frame if available
+                cmds = demo.render_cmds((0, 0, w, h))
+                if cmds:
+                    _sync_start(); term.draw_frame(cmds); _sync_end()
+                else:
+                    _sync_start(); demo.render(term, (0, 0, w, h)); _sync_end()
+                last_draw = now
+                # Idle pacing only if we didn't process input this loop
+                if _REC and not pre_evt:
+                    now3 = time.monotonic()
+                    sleep_ms = frame_budget - int((now3 - now) * 1000)
+                    if sleep_ms > 0:
+                        time.sleep(sleep_ms / 1000.0)
+        finally:
+            _cursor_show()
 
 # Link demo source for code pane is performed inside run_demo_hub after classes are defined
 
@@ -1014,4 +1368,424 @@ class MandelbrotDemo(DemoBase):
             lines.append(''.join(row))
         p = Paragraph.from_text("\n".join(lines))
         p.set_block_title(f"Mandelbrot (+/- zoom, arrows pan, i/k iters={self.max_iter}, c palette)", True)
+        return [DrawCmd.paragraph(p, rect)]
+
+
+class FireDemo(DemoBase):
+    name = "Fire"
+    desc = "Classic fire effect"
+    source_obj = None
+
+    def __init__(self) -> None:
+        self.w = 0
+        self.h = 0
+        self.buf: list[int] = []  # intensity per cell 0..255
+        self.grad = " .:-=+*#%@"  # 10 chars
+        self.cool = 0.02
+
+    def _ensure(self, w: int, h: int) -> None:
+        if w != self.w or h != self.h or not self.buf:
+            self.w, self.h = w, h
+            self.buf = [0] * (w * h)
+
+    def tick(self, dt: float) -> None:
+        # nothing persistent; we update per frame in render_cmds
+        pass
+
+    def render_cmds(self, rect: Tuple[int,int,int,int]) -> list:
+        from . import Paragraph, DrawCmd
+        x, y, w, h = rect
+        if w <= 0 or h <= 0:
+            return []
+        self._ensure(w, h)
+        import random
+        # Seed bottom row with noisy high values
+        base = 200
+        row = (h-1)*w
+        for i in range(w):
+            self.buf[row + i] = max(0, min(255, base + random.randint(-40, 40)))
+
+        # Diffuse upward using a randomized lateral source and cooling
+        nextbuf = self.buf[:]
+        for j in range(h-1):  # 0..h-2 write next row j from sources at j+1
+            srcy = j+1
+            for i in range(w):
+                srcx = (i + random.randint(-1, 1)) % w
+                s = 0
+                # sample three cells below (left, center, right)
+                s += self.buf[srcy*w + ((srcx-1) % w)]
+                s += self.buf[srcy*w + srcx]
+                s += self.buf[srcy*w + ((srcx+1) % w)]
+                s += self.buf[min(h-1, srcy+1)*w + srcx]
+                v = (s // 4) - random.randint(0, 12)
+                if v < 0: v = 0
+                nextbuf[j*w + i] = v
+        self.buf = nextbuf
+        # map to chars
+        gmax = len(self.grad) - 1
+        lines = []
+        for j in range(h):
+            row = []
+            for i in range(w):
+                v = self.buf[j*w + i]
+                idx = (v * gmax) // 255
+                row.append(self.grad[idx])
+            lines.append(''.join(row))
+        p = Paragraph.from_text('\n'.join(lines))
+        p.set_block_title("Fire (classic) — q quit", True)
+        return [DrawCmd.paragraph(p, rect)]
+
+
+class TunnelDemo(DemoBase):
+    name = "Tunnel"
+    desc = "Ray-tunnel illusion"
+    source_obj = None
+
+    def __init__(self) -> None:
+        self.t = 0.0
+        self.speed = 1.0
+        self.grad = " .:-=+*#%@"
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key":
+            return
+        ch = evt.get("ch", 0)
+        if not ch:
+            return
+        c = chr(ch).lower()
+        if c == '+': self.speed = min(5.0, self.speed*1.25)
+        elif c == '-': self.speed = max(0.2, self.speed*0.8)
+
+    def tick(self, dt: float) -> None:
+        self.t += dt * self.speed
+
+    def render_cmds(self, rect: Tuple[int,int,int,int]) -> list:
+        from . import Paragraph, DrawCmd
+        x, y, w, h = rect
+        if w <= 0 or h <= 0:
+            return []
+        cx = (w-1)/2
+        cy = (h-1)/2
+        g = self.grad
+        gm = len(g)-1
+        import math
+        lines = []
+        for j in range(h):
+            row = []
+            for i in range(w):
+                dx = (i - cx) / max(1, w*0.5)
+                dy = (j - cy) / max(1, h*0.5)
+                r = math.sqrt(dx*dx + dy*dy)
+                a = math.atan2(dy, dx)
+                # texture coords with time-based motion
+                u = 1.0/(r+0.0001) + self.t*0.5
+                v = a / (2*math.pi) + self.t*0.2
+                # cheap checker texture
+                c = (int(u*10) ^ int((v)*20)) & 3
+                idx = min(gm, c * (gm//3))
+                row.append(g[idx])
+            lines.append(''.join(row))
+        p = Paragraph.from_text('\n'.join(lines))
+        p.set_block_title("Tunnel (+/- speed) — q quit", True)
+        return [DrawCmd.paragraph(p, rect)]
+
+
+class CubeDemo(DemoBase):
+    name = "Cube"
+    desc = "Spinning wireframe cube"
+    source_obj = None
+
+    def __init__(self) -> None:
+        self.t = 0.0
+        self.speed = 1.0
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key": return
+        ch = evt.get("ch", 0)
+        if not ch: return
+        c = chr(ch).lower()
+        if c == '+': self.speed = min(5.0, self.speed*1.25)
+        elif c == '-': self.speed = max(0.2, self.speed*0.8)
+
+    def tick(self, dt: float) -> None:
+        self.t += dt * self.speed
+
+    def render_cmds(self, rect: Tuple[int,int,int,int]) -> list:
+        from . import Paragraph, DrawCmd
+        x, y, w, h = rect
+        if w <= 0 or h <= 0:
+            return []
+        import math
+        # simple orthographic projection with rotation
+        # cube vertices
+        verts = [
+            (-1,-1,-1),(1,-1,-1),(1,1,-1),(-1,1,-1),
+            (-1,-1, 1),(1,-1, 1),(1,1, 1),(-1,1, 1),
+        ]
+        edges = [(0,1),(1,2),(2,3),(3,0),(4,5),(5,6),(6,7),(7,4),(0,4),(1,5),(2,6),(3,7)]
+        a = self.t*0.9; b = self.t*0.6
+        sa, ca = math.sin(a), math.cos(a)
+        sb, cb = math.sin(b), math.cos(b)
+        rot = []
+        for x0,y0,z0 in verts:
+            # rotate around Y then X
+            x1 = x0*cb + z0*sb
+            z1 = -x0*sb + z0*cb
+            y1 = y0*ca - z1*sa
+            z2 = y0*sa + z1*ca
+            rot.append((x1,y1,z2))
+        # project
+        sx, sy = w*0.5, h*0.5
+        scale = min(w,h)*0.22
+        pts = []
+        for x1,y1,z1 in rot:
+            pts.append((int(sx + x1*scale), int(sy + y1*scale)))
+        # rasterize to buffer
+        buf = [[' ']*w for _ in range(h)]
+        def plot(px,py):
+            if 0<=px<w and 0<=py<h: buf[py][px] = '#'
+        def line(x0,y0,x1,y1):
+            dx = abs(x1-x0); dy = -abs(y1-y0)
+            sx = 1 if x0<x1 else -1; sy = 1 if y0<y1 else -1
+            err = dx+dy
+            while True:
+                plot(x0,y0)
+                if x0==x1 and y0==y1: break
+                e2 = 2*err
+                if e2>=dy: err+=dy; x0+=sx
+                if e2<=dx: err+=dx; y0+=sy
+        for a,b in edges:
+            x0,y0 = pts[a]; x1,y1 = pts[b]
+            line(x0,y0,x1,y1)
+        lines = [''.join(r) for r in buf]
+        p = Paragraph.from_text('\n'.join(lines))
+        p.set_block_title("Wireframe Cube (+/- speed)", True)
+        return [DrawCmd.paragraph(p, rect)]
+
+
+class WidgetSceneDemo(DemoBase):
+    name = "WidgetScene"
+    desc = "Demoscene made of widgets"
+    source_obj = None
+
+    def __init__(self) -> None:
+        self.t = 0.0
+        self.speed = 1.0
+        self.sel = 0
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key": return
+        ch = evt.get("ch", 0)
+        if not ch: return
+        c = chr(ch).lower()
+        if c == '+': self.speed = min(5.0, self.speed*1.25)
+        elif c == '-': self.speed = max(0.2, self.speed*0.8)
+
+    def tick(self, dt: float) -> None:
+        self.t += dt * self.speed
+        self.sel = int(self.t*2) % 4
+
+    def render_cmds(self, rect: Tuple[int,int,int,int]) -> list:
+        from . import Tabs, BarChart, Sparkline, Gauge, List, Paragraph, DrawCmd, Style, FFI_COLOR
+        out = []
+        x, y, w, h = rect
+        if w < 20 or h < 8:
+            p = Paragraph.from_text("WidgetScene needs more space")
+            p.set_block_title("WidgetScene", True)
+            return [DrawCmd.paragraph(p, rect)]
+        top, rest = split_h(rect, 3.0, 7.0, gap=1)
+        mid, bottom = split_h(rest, 6.0, 4.0, gap=1)
+        left, right = split_v(mid, 0.5, 0.5, gap=1)
+
+        # Top tabs pulsate selection
+        tabs = Tabs()
+        tabs.set_titles(["Ratatui", "Widgets", "Demoscene", "Py"])
+        tabs.set_selected(self.sel)
+        tabs.set_block_title("WidgetScene (+/- speed)", True)
+        out.append(DrawCmd.tabs(tabs, top))
+
+        # Left: BarChart as rising/falling equalizer
+        import math
+        n = max(8, min(32, left[2]//2))
+        vals = []
+        for i in range(n):
+            v = 30 + 20*math.sin(self.t*2 + i*0.5) + 10*math.sin(self.t*3 + i*0.9)
+            vals.append(max(0, int(v)))
+        bc = BarChart()
+        bc.set_values(vals)
+        bc.set_labels([""]*len(vals))
+        bc.set_block_title("Equalizer", True)
+        out.append(DrawCmd.barchart(bc, left))
+
+        # Right: Sparkline snake (Lissajous-like)
+        sp = Sparkline()
+        snake = []
+        for i in range(max(10, right[2]-2)):
+            snake.append(int(10 + 9*math.sin(self.t*4 + i*0.3)))
+        sp.set_values(snake)
+        sp.set_block_title("Snake", True)
+        out.append(DrawCmd.sparkline(sp, right))
+
+        # Bottom: dual gauges + scrolling list
+        g_left, g_right = split_v(bottom, 0.5, 0.5, gap=1)
+        g1 = Gauge().ratio(0.5 + 0.49*math.sin(self.t*1.7)).label("Pulse")
+        g1.set_block_title("Pulse", True)
+        out.append(DrawCmd.gauge(g1, g_left))
+        g2 = Gauge().ratio(0.5 + 0.49*math.sin(self.t*2.3 + 1.2)).label("Wave")
+        g2.set_block_title("Wave", True)
+        out.append(DrawCmd.gauge(g2, g_right))
+
+        return out
+
+
+class CACubeDemo(DemoBase):
+    name = "CA Cube"
+    desc = "3D shell cellular automaton (only the cube surface)"
+    source_obj = None
+
+    def __init__(self) -> None:
+        # Conceptually 128^3; simulate 16^3 for speed (no numpy)
+        self.n = 16
+        self.field = [0.0] * (self.n*self.n*self.n)
+        self.nextf = [0.0] * (self.n*self.n*self.n)
+        self.t = 0.0
+        self.speed = 1.0
+        # Precompute radial distance from kernel (center)
+        import math
+        c = (self.n-1)/2
+        self.rad = []
+        maxr = math.sqrt(3)*c
+        for z in range(self.n):
+            for y in range(self.n):
+                for x in range(self.n):
+                    r = math.sqrt((x-c)**2 + (y-c)**2 + (z-c)**2)/maxr
+                    self.rad.append(r)
+        self.threshold = 0.30
+
+    def idx(self, x,y,z):
+        return (z*self.n + y)*self.n + x
+
+    def on_key(self, evt: dict) -> None:
+        if evt.get("kind") != "key": return
+        code = evt.get("code", 0)
+        ch = evt.get("ch", 0)
+        if ch:
+            c = chr(ch).lower()
+            if c == '+': self.speed = min(5.0, self.speed*1.25)
+            elif c == '-': self.speed = max(0.2, self.speed*0.8)
+            elif c == 'i': self.threshold = min(0.9, self.threshold+0.02)
+            elif c == 'k': self.threshold = max(0.1, self.threshold-0.02)
+            elif c == 'r': self.field = [0.0]*len(self.field)
+
+    def tick(self, dt: float) -> None:
+        # Evolve CA (26-neighborhood) a few microsteps per frame
+        import math
+        self.t += dt * self.speed
+        n = self.n
+        steps = 2
+        for _ in range(steps):
+            # inject near kernel
+            c = n//2
+            pulse = 0.65 + 0.35*math.sin(self.t*2.0)
+            for z in range(max(0,c-1), min(n,c+2)):
+                for y in range(max(0,c-1), min(n,c+2)):
+                    for x in range(max(0,c-1), min(n,c+2)):
+                        i = self.idx(x,y,z)
+                        self.field[i] = min(1.0, self.field[i]*0.7 + pulse*0.3)
+            # update from neighbors
+            for z in range(n):
+                for y in range(n):
+                    for x in range(n):
+                        i = self.idx(x,y,z)
+                        v = self.field[i]
+                        r = self.rad[i]
+                        # decay increases with radius
+                        decay = 0.015 + 0.25*(r*r)
+                        s = 0.0; cnb = 0
+                        for dz in (-1,0,1):
+                            zz = z+dz
+                            if 0<=zz<n:
+                                for dy in (-1,0,1):
+                                    yy = y+dy
+                                    if 0<=yy<n:
+                                        for dx in (-1,0,1):
+                                            xx = x+dx
+                                            if 0<=xx<n and not (dx==0 and dy==0 and dz==0):
+                                                s += self.field[self.idx(xx,yy,zz)]; cnb += 1
+                        nb = s/max(1,cnb)
+                        grow = max(0.0, nb - 0.30) * (0.6 - 0.3*r)  # weaker further out
+                        nv = v*(1.0-decay) + grow
+                        self.nextf[i] = max(0.0, min(1.0, nv))
+            self.field, self.nextf = self.nextf, self.field
+
+    def render_cmds(self, rect: Tuple[int,int,int,int]) -> list:
+        from . import Paragraph, DrawCmd
+        x, y, w, h = rect
+        if w<=0 or h<=0: return []
+        import math
+        # Projection setup like CubeDemo
+        sx, sy = w*0.5, h*0.5
+        scale = min(w,h)*0.22
+        a = self.t*0.7; b = self.t*0.4
+        sa, ca = math.sin(a), math.cos(a)
+        sb, cb = math.sin(b), math.cos(b)
+        # Buffer init
+        buf = [[' ']*w for _ in range(h)]
+        # Draw wireframe cube
+        verts = [(-1,-1,-1),(1,-1,-1),(1,1,-1),(-1,1,-1),(-1,-1,1),(1,-1,1),(1,1,1),(-1,1,1)]
+        edges = [(0,1),(1,2),(2,3),(3,0),(4,5),(5,6),(6,7),(7,4),(0,4),(1,5),(2,6),(3,7)]
+        pts = []
+        for x0,y0,z0 in verts:
+            x1 = x0*cb + z0*sb
+            z1 = -x0*sb + z0*cb
+            y1 = y0*ca - z1*sa
+            pts.append((int(sx + x1*scale), int(sy + y1*scale)))
+        def plot(px,py,ch='#'):
+            if 0<=px<w and 0<=py<h: buf[py][px] = ch
+        def line(x0,y0,x1,y1):
+            dx = abs(x1-x0); dy = -abs(y1-y0)
+            sx1 = 1 if x0<x1 else -1; sy1 = 1 if y0<y1 else -1
+            err = dx+dy
+            while True:
+                plot(x0,y0)
+                if x0==x1 and y0==y1: break
+                e2 = 2*err
+                if e2>=dy: err+=dy; x0+=sx1
+                if e2<=dx: err+=dx; y0+=sy1
+        for a,b in edges:
+            x0,y0 = pts[a]; x1,y1 = pts[b]
+            line(x0,y0,x1,y1)
+        # Plot active voxels above threshold only on the outer shell of the cube
+        n = self.n; c = (n-1)/2
+        stride = 1  # full sampling at 16^3
+        shell_positions = []
+        for z in range(0,n,stride):
+            for y0 in range(0,n,stride):
+                for x0 in range(0,n,stride):
+                    if not (x0==0 or x0==n-1 or y0==0 or y0==n-1 or z==0 or z==n-1):
+                        continue
+                    v = self.field[self.idx(x0,y0,z)]
+                    if v <= self.threshold:
+                        continue
+                    # store normalized coords and intensity once; render at multiple scales
+                    X = (x0 - c)/c
+                    Y = (y0 - c)/c
+                    Z = (z  - c)/c
+                    shell_positions.append((X,Y,Z,v))
+        # render multiple concentric cubes (scaled down)
+        layers = [1.0, 0.8, 0.6, 0.45]
+        for li, s in enumerate(layers):
+            for X,Y,Z,v in shell_positions:
+                X1 = (X*cb + Z*sb) * s
+                Z1 = (-X*sb + Z*cb)
+                Y1 = (Y*ca - Z1*sa) * s
+                px = int(sx + X1*scale)
+                py = int(sy + Y1*scale)
+                # slightly easier threshold for inner layers for visibility
+                ch = '#' if v>0.7 else ('*' if v>0.5 else ('+' if v>0.35 else '.'))
+                plot(px,py,ch)
+        lines = [''.join(r) for r in buf]
+        from . import Paragraph
+        p = Paragraph.from_text('\n'.join(lines))
+        p.set_block_title(f"CA Cube (+/- speed, i/k thresh={self.threshold:.2f})", True)
         return [DrawCmd.paragraph(p, rect)]

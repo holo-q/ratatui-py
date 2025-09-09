@@ -37,6 +37,7 @@ from .wrappers import (
     headless_render_chart,
 )
 from .layout import margin, split_h, split_v
+from .util import frame_begin, BackgroundTask
 
 __all__ = [
     "load_library",
@@ -76,4 +77,6 @@ __all__ = [
     "margin",
     "split_h",
     "split_v",
+    "frame_begin",
+    "BackgroundTask",
 ]

@@ -10,6 +10,7 @@ nav:
   - Home: index.md
   - Quickstart: quickstart.md
   - Demos: demos.md
+  - Recording: recording.md
   - API: api.md
 markdown_extensions:
   - admonition

@@ -1,8 +1,8 @@
 # Demos
 
-Preview (placeholder):
-
-![Dashboard demo](assets/dashboard.gif)
+Preview: see the README’s Recording section for how to capture a GIF/MP4. Once you have
+`docs/assets/dashboard.gif`, it will be rendered here automatically. Until then, no
+preview image is displayed to keep strict builds happy.
 
 The package installs several demo entrypoints. Run them from your shell:
 

@@ -110,10 +110,52 @@ ratatui-py-dashboard
 - `RATATUI_FFI_GIT`: override git URL (default `https://github.com/holo-q/ratatui-ffi.git`).
 - `RATATUI_FFI_TAG`: git tag/commit to fetch for bundling (default `v0.1.5`).
 
+### Demo/recording behavior toggles
+- `RATATUI_PY_RECORDING=1`: optimize demo runner for recording. Enables inline mode, synchronized updates, and frame coalescing.
+- `RATATUI_PY_FPS=NN`: target redraw rate in FPS (default 30). Use higher (e.g., 60) for snappier feel while recording.
+- `RATATUI_PY_STATIC=1`: freeze animations for perfectly stable captures; input still works.
+- `RATATUI_PY_NO_CODE=1`: hide the right‑hand code pane in the demo hub to reduce churn and draw only the live demo.
+- `RATATUI_PY_SYNC=1`: force synchronized update bracketing even outside recording (usually not needed).
+- `RATATUI_FFI_NO_ALTSCR=1`: render inline (no alternate screen) so scrollback is preserved. The demo runner enables this by default.
+
 ## Platform support
 - Linux: `x86_64` is tested; other targets may work with a compatible `ratatui_ffi` build.
 - macOS: Apple Silicon and Intel are supported via `dylib`.
 - Windows: supported via `ratatui_ffi.dll`.
+
+## Recording (flicker‑free, with scrollback)
+
+The demos are tuned for clean screencasts:
+
+- Inline viewport by default (no alternate screen) so your terminal scrollback remains intact.
+- Whole‑frame synchronized updates to avoid partial‑frame flicker in recorders.
+- Event‑driven redraw with key‑repeat draining for responsive navigation.
+
+Quick start with asciinema (no shell prompt in the cast):
+
+```
+# Record the dashboard only (80x24), smooth and flicker‑free
+asciinema rec -q --cols 80 --rows 24 --idle-time-limit 2 \
+  -c 'RATATUI_PY_RECORDING=1 RATATUI_PY_FPS=60 uv run ratatui-py-dashboard' \
+  docs/assets/dashboard.cast --overwrite
+
+# Or record the demo hub (hide code pane for minimal churn)
+asciinema rec -q --cols 80 --rows 24 --idle-time-limit 2 \
+  -c 'RATATUI_PY_RECORDING=1 RATATUI_PY_NO_CODE=1 RATATUI_PY_FPS=60 uv run ratatui-py-demos' \
+  docs/assets/demos.cast --overwrite
+```
+
+Prefer a GIF for GitHub’s README preview? Convert the cast:
+
+```
+# Using asciinema-agg (install locally or use its container image)
+asciinema-agg --fps 30 --idle 2 docs/assets/dashboard.cast docs/assets/dashboard.gif
+```
+
+Notes:
+- To absolutely eliminate motion during capture, add `RATATUI_PY_STATIC=1`.
+- If your terminal still shows artifacts, record inside tmux: `tmux new -As rec` then run the same command.
+- GitHub READMEs cannot embed a `.cast` player; use a GIF/MP4 and link to the `.cast` in docs.
 
 ## Troubleshooting
 - Build toolchain not found: set `RATATUI_FFI_LIB` to a prebuilt shared library or install Rust (`cargo`) and retry.
@@ -214,9 +256,6 @@ MIT — see [LICENSE](./LICENSE).
 
 [ratatui_ffi]: https://github.com/holo-q/ratatui-ffi
 [Ratatui]: https://github.com/ratatui-org/ratatui
-[!NOTE]
-Demo preview placeholder: replace `docs/assets/dashboard.gif` with your recording.
+Demo preview (replace with your own recording):
 
 ![Dashboard demo](docs/assets/dashboard.gif)
-
-See recording guide: docs/recording.md

@@ -1,0 +1,20 @@
+# Include core project files
+include LICENSE
+include README.md
+include CHANGELOG.md
+include pyproject.toml
+
+# Include package data files
+recursive-include src/ratatui_py *.py
+include src/ratatui_py/py.typed
+include src/ratatui_py/_bundled/__init__.py
+
+# Exclude prebuilt shared libraries from the sdist
+exclude src/ratatui_py/_bundled/*.so
+exclude src/ratatui_py/_bundled/*.dylib
+exclude src/ratatui_py/_bundled/*.dll
+
+# Exclude build artifacts
+prune build
+prune dist
+prune src/ratatui_py.egg-info

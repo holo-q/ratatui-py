@@ -6,6 +6,12 @@ import subprocess
 import tempfile
 from pathlib import Path
 from setuptools import setup
+from setuptools.dist import Distribution
+try:
+    # Mark wheel as non-pure so it gets a platform tag
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel  # type: ignore
+except Exception:  # wheel may not be present at import time
+    _bdist_wheel = None  # type: ignore
 from setuptools.command.build_py import build_py as _build_py
 from setuptools.command.develop import develop as _develop
 
@@ -89,9 +95,26 @@ class develop(_develop):
         super().run()
 
 
+class BinaryDistribution(Distribution):
+    # Ensure the wheel is treated as having binary components
+    def has_ext_modules(self):  # type: ignore[override]
+        return True
+
+
+if _bdist_wheel is not None:
+    class bdist_wheel(_bdist_wheel):  # type: ignore[misc,valid-type]
+        def finalize_options(self):  # type: ignore[override]
+            super().finalize_options()
+            # Mark as non-pure so the wheel gets a platform tag
+            self.root_is_pure = False
+else:
+    bdist_wheel = None  # type: ignore
+
+
 if __name__ == "__main__":
     setup(
         name="ratatui-py",
-        cmdclass={"build_py": build_py, "develop": develop},
+        cmdclass={k: v for k, v in {"build_py": build_py, "develop": develop, "bdist_wheel": bdist_wheel}.items() if v is not None},
+        distclass=BinaryDistribution,
         package_data={"ratatui_py": ["_bundled/*", "py.typed"]},
     )
