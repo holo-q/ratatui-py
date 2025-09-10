@@ -198,6 +198,13 @@ class Terminal:
         r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_sparkline_in(self._handle, s._handle, r))
 
+    # Clear region widget
+    def draw_clear(self, rect: RectLike) -> bool:
+        if not hasattr(self._lib, 'ratatui_clear_in'):
+            return False
+        r = _ffi_rect(rect)
+        return bool(self._lib.ratatui_clear_in(self._handle, r))
+
     # Chart and batched frames
     def draw_chart(self, c: "Chart", rect: RectLike) -> bool:
         r = _ffi_rect(rect)
@@ -900,6 +907,21 @@ class Frame:
     def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is None:
             self.ok = self._term.draw_frame(self._cmds)
+
+
+# Color helpers (fast integer encoding; use FFI if available for parity)
+def rgb(r: int, g: int, b: int) -> int:
+    lib = load_library()
+    if hasattr(lib, 'ratatui_color_rgb'):
+        return int(lib.ratatui_color_rgb(C.c_uint8(int(r)), C.c_uint8(int(g)), C.c_uint8(int(b))))
+    return (0x80000000 | ((int(r) & 0xFF) << 16) | ((int(g) & 0xFF) << 8) | (int(b) & 0xFF))
+
+
+def color_indexed(i: int) -> int:
+    lib = load_library()
+    if hasattr(lib, 'ratatui_color_indexed'):
+        return int(lib.ratatui_color_indexed(C.c_uint8(int(i))))
+    return (0x40000000 | (int(i) & 0xFF))
 
 
 # Stateful list and table

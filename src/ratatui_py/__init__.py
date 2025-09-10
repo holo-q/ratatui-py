@@ -17,6 +17,8 @@ from .wrappers import (
     Terminal,
     Paragraph,
     Style,
+    rgb,
+    color_indexed,
     List,
     Table,
     Gauge,

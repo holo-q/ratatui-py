@@ -253,6 +253,10 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
         lib.ratatui_list_append_items_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
     if hasattr(lib, 'ratatui_list_set_highlight_spacing'):
         lib.ratatui_list_set_highlight_spacing.argtypes = [C.c_void_p, C.c_uint]
+    if hasattr(lib, 'ratatui_list_set_direction'):
+        lib.ratatui_list_set_direction.argtypes = [C.c_void_p, C.c_uint]
+    if hasattr(lib, 'ratatui_list_set_scroll_offset'):
+        lib.ratatui_list_set_scroll_offset.argtypes = [C.c_void_p, C.c_uint16]
     lib.ratatui_terminal_draw_list_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
     lib.ratatui_terminal_draw_list_in.restype = C.c_bool
     lib.ratatui_headless_render_list.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
@@ -289,6 +293,16 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.FfiRowCellsLines = FfiRowCellsLines
     if hasattr(lib, 'ratatui_table_append_row_cells_lines'):
         lib.ratatui_table_append_row_cells_lines.argtypes = [C.c_void_p, C.POINTER(FfiCellLines), C.c_size_t]
+    if hasattr(lib, 'ratatui_table_set_widths'):
+        lib.ratatui_table_set_widths.argtypes = [C.c_void_p, C.POINTER(C.c_uint16), C.c_size_t]
+    if hasattr(lib, 'ratatui_table_set_widths_percentages'):
+        lib.ratatui_table_set_widths_percentages.argtypes = [C.c_void_p, C.POINTER(C.c_uint16), C.c_size_t]
+    if hasattr(lib, 'ratatui_table_set_row_height'):
+        lib.ratatui_table_set_row_height.argtypes = [C.c_void_p, C.c_uint16]
+    if hasattr(lib, 'ratatui_table_set_column_spacing'):
+        lib.ratatui_table_set_column_spacing.argtypes = [C.c_void_p, C.c_uint16]
+    if hasattr(lib, 'ratatui_table_set_highlight_spacing'):
+        lib.ratatui_table_set_highlight_spacing.argtypes = [C.c_void_p, C.c_uint]
 
     # Gauge
     lib.ratatui_gauge_new.restype = C.c_void_p
@@ -417,6 +431,10 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     if hasattr(lib, 'ratatui_color_indexed'):
         lib.ratatui_color_indexed.argtypes = [C.c_uint8]
         lib.ratatui_color_indexed.restype = C.c_uint32
+    # Clear widget
+    if hasattr(lib, 'ratatui_clear_in'):
+        lib.ratatui_clear_in.argtypes = [C.c_void_p, FfiRect]
+        lib.ratatui_clear_in.restype = C.c_bool
 
     # ---- Additional v0.2.0 exports (ensure discovery and link-through) ----
     # Terminal raw/alt + cursor/viewport
