@@ -17,6 +17,8 @@ from ._ffi import (
     FFI_MOUSE_KIND,
     FFI_MOUSE_BUTTON,
     FFI_ALIGN,
+    FFI_BORDERS,
+    FFI_BORDER_TYPE,
     FFI_WIDGET_KIND,
 )
 from .types import RectLike, Color, KeyCode, KeyMods, MouseKind, MouseButton, Mod
@@ -646,6 +648,10 @@ class Gauge:
         if hasattr(self._lib, 'ratatui_gauge_set_block_title_alignment'):
             self._lib.ratatui_gauge_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
 
+    def set_styles(self, style: Style, label_style: Style, gauge_style: Style) -> None:
+        if hasattr(self._lib, 'ratatui_gauge_set_styles'):
+            self._lib.ratatui_gauge_set_styles(self._handle, style.to_ffi(), label_style.to_ffi(), gauge_style.to_ffi())
+
     def close(self) -> None:
         if getattr(self, "_handle", None):
             self._lib.ratatui_gauge_free(self._handle)
@@ -688,6 +694,10 @@ class Tabs:
     def set_divider(self, s: str) -> None:
         if hasattr(self._lib, 'ratatui_tabs_set_divider'):
             self._lib.ratatui_tabs_set_divider(self._handle, s.encode('utf-8'))
+
+    def set_styles(self, unselected: Style, selected: Style) -> None:
+        if hasattr(self._lib, 'ratatui_tabs_set_styles'):
+            self._lib.ratatui_tabs_set_styles(self._handle, unselected.to_ffi(), selected.to_ffi())
 
     def set_titles_spans(self, titles: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
         if not hasattr(self._lib, 'ratatui_tabs_set_titles_spans'):
@@ -732,6 +742,18 @@ class BarChart:
         if hasattr(self._lib, 'ratatui_barchart_set_block_title_alignment'):
             self._lib.ratatui_barchart_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
 
+    def set_bar_width(self, width: int) -> None:
+        if hasattr(self._lib, 'ratatui_barchart_set_bar_width'):
+            self._lib.ratatui_barchart_set_bar_width(self._handle, C.c_uint16(int(width)))
+
+    def set_bar_gap(self, gap: int) -> None:
+        if hasattr(self._lib, 'ratatui_barchart_set_bar_gap'):
+            self._lib.ratatui_barchart_set_bar_gap(self._handle, C.c_uint16(int(gap)))
+
+    def set_styles(self, bar: Style, value: Style, label: Style) -> None:
+        if hasattr(self._lib, 'ratatui_barchart_set_styles'):
+            self._lib.ratatui_barchart_set_styles(self._handle, bar.to_ffi(), value.to_ffi(), label.to_ffi())
+
     def close(self) -> None:
         if getattr(self, "_handle", None):
             self._lib.ratatui_barchart_free(self._handle)
@@ -763,6 +785,14 @@ class Sparkline:
     def set_block_title_alignment(self, align: str | int) -> None:
         if hasattr(self._lib, 'ratatui_sparkline_set_block_title_alignment'):
             self._lib.ratatui_sparkline_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
+
+    def set_max(self, max_value: int) -> None:
+        if hasattr(self._lib, 'ratatui_sparkline_set_max'):
+            self._lib.ratatui_sparkline_set_max(self._handle, C.c_uint64(int(max_value)))
+
+    def set_style(self, style: Style) -> None:
+        if hasattr(self._lib, 'ratatui_sparkline_set_style'):
+            self._lib.ratatui_sparkline_set_style(self._handle, style.to_ffi())
 
     def close(self) -> None:
         if getattr(self, "_handle", None):
@@ -921,6 +951,10 @@ class Chart:
             k = (C.c_uint32 * len(kinds2))(*[int(x) for x in kinds2])
             v = (C.c_uint16 * len(values2))(*[int(x) for x in values2])
             self._lib.ratatui_chart_set_hidden_legend_constraints(self._handle, k, v)
+
+    def set_labels_alignment(self, x_align: str | int, y_align: str | int) -> None:
+        if hasattr(self._lib, 'ratatui_chart_set_labels_alignment'):
+            self._lib.ratatui_chart_set_labels_alignment(self._handle, C.c_uint(_align_value(x_align)), C.c_uint(_align_value(y_align)))
 
     def set_x_labels_spans(self, labels: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
         if not hasattr(self._lib, 'ratatui_chart_set_x_labels_spans'):

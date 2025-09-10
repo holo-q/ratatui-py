@@ -384,6 +384,8 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
         lib.ratatui_chart_set_legend_position.argtypes = [C.c_void_p, C.c_uint]
     if hasattr(lib, 'ratatui_chart_set_hidden_legend_constraints'):
         lib.ratatui_chart_set_hidden_legend_constraints.argtypes = [C.c_void_p, C.POINTER(C.c_uint32), C.POINTER(C.c_uint16)]
+    if hasattr(lib, 'ratatui_chart_set_labels_alignment'):
+        lib.ratatui_chart_set_labels_alignment.argtypes = [C.c_void_p, C.c_uint, C.c_uint]
 
     # Sparkline
     lib.ratatui_sparkline_new.restype = C.c_void_p
@@ -394,6 +396,12 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_terminal_draw_sparkline_in.restype = C.c_bool
     lib.ratatui_headless_render_sparkline.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
     lib.ratatui_headless_render_sparkline.restype = C.c_bool
+    if hasattr(lib, 'ratatui_sparkline_set_block_title_alignment'):
+        lib.ratatui_sparkline_set_block_title_alignment.argtypes = [C.c_void_p, C.c_uint]
+    if hasattr(lib, 'ratatui_sparkline_set_max'):
+        lib.ratatui_sparkline_set_max.argtypes = [C.c_void_p, C.c_uint64]
+    if hasattr(lib, 'ratatui_sparkline_set_style'):
+        lib.ratatui_sparkline_set_style.argtypes = [C.c_void_p, FfiStyle]
 
     # Optional scrollbar (if built with feature)
     if hasattr(lib, 'ratatui_scrollbar_new'):
@@ -512,6 +520,22 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     if hasattr(lib, 'ratatui_headless_render_ratatuilogo_sized'):
         lib.ratatui_headless_render_ratatuilogo_sized.argtypes = [C.c_uint16, C.c_uint16, C.c_uint32, C.POINTER(C.c_char_p)]
         lib.ratatui_headless_render_ratatuilogo_sized.restype = C.c_bool
+
+    # Block advanced for common widgets
+    for name in [
+        'ratatui_paragraph_set_block_adv',
+        'ratatui_list_set_block_adv',
+        'ratatui_table_set_block_adv',
+        'ratatui_gauge_set_block_adv',
+        'ratatui_linegauge_set_block_adv',
+        'ratatui_tabs_set_block_adv',
+        'ratatui_barchart_set_block_adv',
+        'ratatui_chart_set_block_adv',
+        'ratatui_sparkline_set_block_adv',
+        'ratatui_scrollbar_set_block_adv',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name).argtypes = [C.c_void_p, C.c_uint8, C.c_uint32, C.c_uint16, C.c_uint16, C.c_uint16, C.c_uint16, C.POINTER(FfiSpan), C.c_size_t]
 
     # ---- Additional v0.2.0 exports (ensure discovery and link-through) ----
     # Terminal raw/alt + cursor/viewport
