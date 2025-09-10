@@ -16,6 +16,7 @@ from ._ffi import (
     FFI_KEY_MODS,
     FFI_MOUSE_KIND,
     FFI_MOUSE_BUTTON,
+    FFI_ALIGN,
     FFI_WIDGET_KIND,
 )
 from .types import RectLike, Color, KeyCode, KeyMods, MouseKind, MouseButton, Mod
@@ -93,6 +94,18 @@ class Paragraph:
     def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_paragraph_set_block_title(self._handle, t, bool(show_border))
+
+    def set_alignment(self, align: str | int) -> "Paragraph":
+        if hasattr(self._lib, 'ratatui_paragraph_set_alignment'):
+            a = _align_value(align)
+            self._lib.ratatui_paragraph_set_alignment(self._handle, C.c_uint(a))
+        return self
+
+    def set_block_title_alignment(self, align: str | int) -> "Paragraph":
+        if hasattr(self._lib, 'ratatui_paragraph_set_block_title_alignment'):
+            a = _align_value(align)
+            self._lib.ratatui_paragraph_set_block_title_alignment(self._handle, C.c_uint(a))
+        return self
 
     def append_line(self, text: str, style: Optional[Style] = None) -> None:
         st = (style or Style()).to_ffi()
@@ -468,6 +481,10 @@ class List:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_list_set_block_title(self._handle, t, bool(show_border))
 
+    def set_block_title_alignment(self, align: str | int) -> None:
+        if hasattr(self._lib, 'ratatui_list_set_block_title_alignment'):
+            self._lib.ratatui_list_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
+
     def set_selected(self, idx: Optional[int]) -> None:
         self._lib.ratatui_list_set_selected(self._handle, -1 if idx is None else int(idx))
 
@@ -527,6 +544,10 @@ class Table:
     def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_table_set_block_title(self._handle, t, bool(show_border))
+
+    def set_block_title_alignment(self, align: str | int) -> None:
+        if hasattr(self._lib, 'ratatui_table_set_block_title_alignment'):
+            self._lib.ratatui_table_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
 
     def set_selected(self, idx: Optional[int]) -> None:
         self._lib.ratatui_table_set_selected(self._handle, -1 if idx is None else int(idx))
@@ -603,6 +624,10 @@ class Gauge:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_gauge_set_block_title(self._handle, t, bool(show_border))
 
+    def set_block_title_alignment(self, align: str | int) -> None:
+        if hasattr(self._lib, 'ratatui_gauge_set_block_title_alignment'):
+            self._lib.ratatui_gauge_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
+
     def close(self) -> None:
         if getattr(self, "_handle", None):
             self._lib.ratatui_gauge_free(self._handle)
@@ -633,6 +658,18 @@ class Tabs:
     def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_tabs_set_block_title(self._handle, t, bool(show_border))
+
+    def set_block_title_alignment(self, align: str | int) -> None:
+        if hasattr(self._lib, 'ratatui_tabs_set_block_title_alignment'):
+            self._lib.ratatui_tabs_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
+
+    def clear_titles(self) -> None:
+        if hasattr(self._lib, 'ratatui_tabs_clear_titles'):
+            self._lib.ratatui_tabs_clear_titles(self._handle)
+
+    def set_divider(self, s: str) -> None:
+        if hasattr(self._lib, 'ratatui_tabs_set_divider'):
+            self._lib.ratatui_tabs_set_divider(self._handle, s.encode('utf-8'))
 
     def set_titles_spans(self, titles: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
         if not hasattr(self._lib, 'ratatui_tabs_set_titles_spans'):
@@ -673,6 +710,10 @@ class BarChart:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_barchart_set_block_title(self._handle, t, bool(show_border))
 
+    def set_block_title_alignment(self, align: str | int) -> None:
+        if hasattr(self._lib, 'ratatui_barchart_set_block_title_alignment'):
+            self._lib.ratatui_barchart_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
+
     def close(self) -> None:
         if getattr(self, "_handle", None):
             self._lib.ratatui_barchart_free(self._handle)
@@ -700,6 +741,10 @@ class Sparkline:
     def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_sparkline_set_block_title(self._handle, t, bool(show_border))
+
+    def set_block_title_alignment(self, align: str | int) -> None:
+        if hasattr(self._lib, 'ratatui_sparkline_set_block_title_alignment'):
+            self._lib.ratatui_sparkline_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
 
     def close(self) -> None:
         if getattr(self, "_handle", None):
@@ -731,6 +776,10 @@ class Scrollbar:
     def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_scrollbar_set_block_title(self._handle, t, bool(show_border))
+
+    def set_block_title_alignment(self, align: str | int) -> None:
+        if hasattr(self._lib, 'ratatui_scrollbar_set_block_title_alignment'):
+            self._lib.ratatui_scrollbar_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
 
     def close(self) -> None:
         if getattr(self, "_handle", None):
@@ -849,6 +898,10 @@ class Chart:
         t = None if title is None else title.encode("utf-8")
         self._lib.ratatui_chart_set_block_title(self._handle, t, bool(show_border))
 
+    def set_block_title_alignment(self, align: str | int) -> None:
+        if hasattr(self._lib, 'ratatui_chart_set_block_title_alignment'):
+            self._lib.ratatui_chart_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
+
     def close(self) -> None:
         if getattr(self, "_handle", None):
             self._lib.ratatui_chart_free(self._handle)
@@ -926,6 +979,19 @@ def _ffi_rect(rect: RectLike) -> FfiRect:
         return FfiRect(int(x), int(y), int(w), int(h))
     x, y, w, h = rect  # type: ignore[misc]
     return FfiRect(int(x), int(y), int(w), int(h))
+
+
+def _align_value(align: str | int) -> int:
+    if isinstance(align, int):
+        return align
+    a = align.strip().lower()
+    if a.startswith('l'):
+        return FFI_ALIGN['Left']
+    if a.startswith('c'):
+        return FFI_ALIGN['Center']
+    if a.startswith('r'):
+        return FFI_ALIGN['Right']
+    raise ValueError(f"invalid alignment: {align}")
 
 
 class Frame:

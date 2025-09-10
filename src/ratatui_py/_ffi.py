@@ -263,6 +263,8 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
         lib.ratatui_list_set_direction.argtypes = [C.c_void_p, C.c_uint]
     if hasattr(lib, 'ratatui_list_set_scroll_offset'):
         lib.ratatui_list_set_scroll_offset.argtypes = [C.c_void_p, C.c_uint16]
+    if hasattr(lib, 'ratatui_list_set_block_title_alignment'):
+        lib.ratatui_list_set_block_title_alignment.argtypes = [C.c_void_p, C.c_uint]
     lib.ratatui_terminal_draw_list_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
     lib.ratatui_terminal_draw_list_in.restype = C.c_bool
     lib.ratatui_headless_render_list.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
@@ -311,6 +313,8 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
         lib.ratatui_table_set_column_spacing.argtypes = [C.c_void_p, C.c_uint16]
     if hasattr(lib, 'ratatui_table_set_highlight_spacing'):
         lib.ratatui_table_set_highlight_spacing.argtypes = [C.c_void_p, C.c_uint]
+    if hasattr(lib, 'ratatui_table_set_block_title_alignment'):
+        lib.ratatui_table_set_block_title_alignment.argtypes = [C.c_void_p, C.c_uint]
 
     # Gauge
     lib.ratatui_gauge_new.restype = C.c_void_p
@@ -334,6 +338,12 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_tabs_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
     if hasattr(lib, 'ratatui_tabs_set_titles_spans'):
         lib.ratatui_tabs_set_titles_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
+    if hasattr(lib, 'ratatui_tabs_set_block_title_alignment'):
+        lib.ratatui_tabs_set_block_title_alignment.argtypes = [C.c_void_p, C.c_uint]
+    if hasattr(lib, 'ratatui_tabs_set_divider'):
+        lib.ratatui_tabs_set_divider.argtypes = [C.c_void_p, C.c_char_p]
+    if hasattr(lib, 'ratatui_tabs_clear_titles'):
+        lib.ratatui_tabs_clear_titles.argtypes = [C.c_void_p]
     lib.ratatui_terminal_draw_tabs_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
     lib.ratatui_terminal_draw_tabs_in.restype = C.c_bool
     lib.ratatui_headless_render_tabs.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
@@ -349,6 +359,8 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_terminal_draw_barchart_in.restype = C.c_bool
     lib.ratatui_headless_render_barchart.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
     lib.ratatui_headless_render_barchart.restype = C.c_bool
+    if hasattr(lib, 'ratatui_barchart_set_block_title_alignment'):
+        lib.ratatui_barchart_set_block_title_alignment.argtypes = [C.c_void_p, C.c_uint]
 
     # Chart
     lib.ratatui_chart_new.restype = C.c_void_p
@@ -356,6 +368,8 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_chart_add_line.argtypes = [C.c_void_p, C.c_char_p, C.POINTER(C.c_double), C.c_size_t, FfiStyle]
     lib.ratatui_chart_set_axes_titles.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p]
     lib.ratatui_chart_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    if hasattr(lib, 'ratatui_chart_set_block_title_alignment'):
+        lib.ratatui_chart_set_block_title_alignment.argtypes = [C.c_void_p, C.c_uint]
     lib.ratatui_terminal_draw_chart_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
     lib.ratatui_terminal_draw_chart_in.restype = C.c_bool
     lib.ratatui_headless_render_chart.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
@@ -381,6 +395,8 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
         lib.ratatui_terminal_draw_scrollbar_in.restype = C.c_bool
         lib.ratatui_headless_render_scrollbar.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
         lib.ratatui_headless_render_scrollbar.restype = C.c_bool
+        if hasattr(lib, 'ratatui_scrollbar_set_block_title_alignment'):
+            lib.ratatui_scrollbar_set_block_title_alignment.argtypes = [C.c_void_p, C.c_uint]
 
     # Batched frame drawing
     class FfiDrawCmd(C.Structure):
