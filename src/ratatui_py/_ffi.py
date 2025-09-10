@@ -421,27 +421,40 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     # ---- Additional v0.2.0 exports (ensure discovery and link-through) ----
     # Terminal raw/alt + cursor/viewport
     if hasattr(lib, 'ratatui_terminal_enable_raw'):
-        lib.ratatui_terminal_enable_raw
+        lib.ratatui_terminal_enable_raw.argtypes = []
+        lib.ratatui_terminal_enable_raw.restype = None
     if hasattr(lib, 'ratatui_terminal_disable_raw'):
-        lib.ratatui_terminal_disable_raw
+        lib.ratatui_terminal_disable_raw.argtypes = []
+        lib.ratatui_terminal_disable_raw.restype = None
     if hasattr(lib, 'ratatui_terminal_enter_alt'):
-        lib.ratatui_terminal_enter_alt
+        lib.ratatui_terminal_enter_alt.argtypes = []
+        lib.ratatui_terminal_enter_alt.restype = None
     if hasattr(lib, 'ratatui_terminal_leave_alt'):
-        lib.ratatui_terminal_leave_alt
+        lib.ratatui_terminal_leave_alt.argtypes = []
+        lib.ratatui_terminal_leave_alt.restype = None
     if hasattr(lib, 'ratatui_terminal_show_cursor'):
-        lib.ratatui_terminal_show_cursor
+        lib.ratatui_terminal_show_cursor.argtypes = []
+        lib.ratatui_terminal_show_cursor.restype = None
     if hasattr(lib, 'ratatui_terminal_get_cursor_position'):
-        lib.ratatui_terminal_get_cursor_position
+        lib.ratatui_terminal_get_cursor_position.argtypes = [C.POINTER(C.c_uint16), C.POINTER(C.c_uint16)]
+        lib.ratatui_terminal_get_cursor_position.restype = C.c_bool
     if hasattr(lib, 'ratatui_terminal_set_cursor_position'):
-        lib.ratatui_terminal_set_cursor_position
+        lib.ratatui_terminal_set_cursor_position.argtypes = [C.c_uint16, C.c_uint16]
+        lib.ratatui_terminal_set_cursor_position.restype = None
     if hasattr(lib, 'ratatui_terminal_get_viewport_area'):
-        lib.ratatui_terminal_get_viewport_area
+        lib.ratatui_terminal_get_viewport_area.argtypes = [C.POINTER(FfiRect)]
+        lib.ratatui_terminal_get_viewport_area.restype = C.c_bool
     if hasattr(lib, 'ratatui_terminal_set_viewport_area'):
-        lib.ratatui_terminal_set_viewport_area
+        lib.ratatui_terminal_set_viewport_area.argtypes = [FfiRect]
+        lib.ratatui_terminal_set_viewport_area.restype = None
 
     # Layout base split
     if hasattr(lib, 'ratatui_layout_split'):
-        lib.ratatui_layout_split
+        lib.ratatui_layout_split.argtypes = [
+            C.c_uint16, C.c_uint16, C.c_uint,  # w, h, dir
+            C.POINTER(C.c_uint), C.POINTER(C.c_uint16), C.POINTER(C.c_uint16), C.c_size_t,  # kinds, valsA, valsB, len
+            C.POINTER(FfiRect), C.c_size_t,  # out rects, cap
+        ]
 
     # Paragraph advanced
     for name in [
@@ -454,7 +467,16 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
         'ratatui_paragraph_set_block_adv',
     ]:
         if hasattr(lib, name):
-            getattr(lib, name)
+            if name == 'ratatui_paragraph_set_style':
+                lib.ratatui_paragraph_set_style.argtypes = [C.c_void_p, FfiStyle]
+            elif name == 'ratatui_paragraph_set_wrap':
+                lib.ratatui_paragraph_set_wrap.argtypes = [C.c_void_p, C.c_bool]
+            elif name == 'ratatui_paragraph_set_scroll':
+                lib.ratatui_paragraph_set_scroll.argtypes = [C.c_void_p, C.c_uint16]
+            elif name == 'ratatui_paragraph_reserve_lines':
+                lib.ratatui_paragraph_reserve_lines.argtypes = [C.c_void_p, C.c_size_t]
+            else:
+                getattr(lib, name)
 
     # List items/state and advanced
     for name in [
@@ -472,7 +494,22 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
         'ratatui_list_state_set_offset',
     ]:
         if hasattr(lib, name):
-            getattr(lib, name)
+            if name == 'ratatui_list_state_new':
+                lib.ratatui_list_state_new.restype = C.c_void_p
+            elif name == 'ratatui_list_state_free':
+                lib.ratatui_list_state_free.argtypes = [C.c_void_p]
+            elif name == 'ratatui_list_state_set_selected':
+                lib.ratatui_list_state_set_selected.argtypes = [C.c_void_p, C.c_int]
+            elif name == 'ratatui_list_state_set_offset':
+                lib.ratatui_list_state_set_offset.argtypes = [C.c_void_p, C.c_uint16]
+            elif name == 'ratatui_terminal_draw_list_state_in':
+                lib.ratatui_terminal_draw_list_state_in.argtypes = [C.c_void_p, C.c_void_p, C.c_void_p, FfiRect]
+                lib.ratatui_terminal_draw_list_state_in.restype = C.c_bool
+            elif name == 'ratatui_headless_render_list_state':
+                lib.ratatui_headless_render_list_state.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.c_void_p, C.POINTER(C.c_char_p)]
+                lib.ratatui_headless_render_list_state.restype = C.c_bool
+            else:
+                getattr(lib, name)
 
     # Table columns/state and advanced
     for name in [
@@ -496,7 +533,19 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
         'ratatui_terminal_draw_table_state_in',
     ]:
         if hasattr(lib, name):
-            getattr(lib, name)
+            if name == 'ratatui_table_state_new':
+                lib.ratatui_table_state_new.restype = C.c_void_p
+            elif name == 'ratatui_table_state_free':
+                lib.ratatui_table_state_free.argtypes = [C.c_void_p]
+            elif name == 'ratatui_table_state_set_selected':
+                lib.ratatui_table_state_set_selected.argtypes = [C.c_void_p, C.c_int]
+            elif name == 'ratatui_table_state_set_offset':
+                lib.ratatui_table_state_set_offset.argtypes = [C.c_void_p, C.c_uint16]
+            elif name == 'ratatui_terminal_draw_table_state_in':
+                lib.ratatui_terminal_draw_table_state_in.argtypes = [C.c_void_p, C.c_void_p, C.c_void_p, FfiRect]
+                lib.ratatui_terminal_draw_table_state_in.restype = C.c_bool
+            else:
+                getattr(lib, name)
 
     # Tabs advanced
     for name in [

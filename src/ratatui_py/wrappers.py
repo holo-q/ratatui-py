@@ -98,6 +98,27 @@ class Paragraph:
         st = (style or Style()).to_ffi()
         self._lib.ratatui_paragraph_append_line(self._handle, text.encode("utf-8"), st)
 
+    # Advanced configuration (v0.2.0+)
+    def set_style(self, style: Style) -> "Paragraph":
+        if hasattr(self._lib, 'ratatui_paragraph_set_style'):
+            self._lib.ratatui_paragraph_set_style(self._handle, style.to_ffi())
+        return self
+
+    def set_wrap(self, trim: bool = True) -> "Paragraph":
+        if hasattr(self._lib, 'ratatui_paragraph_set_wrap'):
+            self._lib.ratatui_paragraph_set_wrap(self._handle, bool(trim))
+        return self
+
+    def set_scroll(self, offset: int) -> "Paragraph":
+        if hasattr(self._lib, 'ratatui_paragraph_set_scroll'):
+            self._lib.ratatui_paragraph_set_scroll(self._handle, C.c_uint16(int(offset)))
+        return self
+
+    def reserve_lines(self, n: int) -> "Paragraph":
+        if hasattr(self._lib, 'ratatui_paragraph_reserve_lines'):
+            self._lib.ratatui_paragraph_reserve_lines(self._handle, C.c_size_t(int(n)))
+        return self
+
     # Note: no __del_name__ shim; rely on __del__ below guardedly.
 
     def close(self) -> None:
@@ -125,6 +146,27 @@ class Terminal:
 
     def clear(self) -> None:
         self._lib.ratatui_terminal_clear(self._handle)
+
+    # Raw/alt/cursor/viewport controls (present in v0.2.0+)
+    def enable_raw(self) -> None:
+        if hasattr(self._lib, 'ratatui_terminal_enable_raw'):
+            self._lib.ratatui_terminal_enable_raw()
+
+    def disable_raw(self) -> None:
+        if hasattr(self._lib, 'ratatui_terminal_disable_raw'):
+            self._lib.ratatui_terminal_disable_raw()
+
+    def enter_alt(self) -> None:
+        if hasattr(self._lib, 'ratatui_terminal_enter_alt'):
+            self._lib.ratatui_terminal_enter_alt()
+
+    def leave_alt(self) -> None:
+        if hasattr(self._lib, 'ratatui_terminal_leave_alt'):
+            self._lib.ratatui_terminal_leave_alt()
+
+    def show_cursor(self) -> None:
+        if hasattr(self._lib, 'ratatui_terminal_show_cursor'):
+            self._lib.ratatui_terminal_show_cursor()
 
     def draw_paragraph(self, p: Paragraph, rect: Optional[RectLike] = None) -> bool:
         if rect is None:
@@ -181,6 +223,36 @@ class Terminal:
         if not ok:
             raise RuntimeError("ratatui_terminal_size failed")
         return (int(w.value), int(h.value))
+
+    def get_cursor_position(self) -> Tuple[int, int]:
+        if not hasattr(self._lib, 'ratatui_terminal_get_cursor_position'):
+            raise RuntimeError('cursor position not supported by FFI build')
+        x = C.c_uint16(0)
+        y = C.c_uint16(0)
+        ok = self._lib.ratatui_terminal_get_cursor_position(C.byref(x), C.byref(y))
+        if not ok:
+            raise RuntimeError('ratatui_terminal_get_cursor_position failed')
+        return (int(x.value), int(y.value))
+
+    def set_cursor_position(self, x: int, y: int) -> None:
+        if not hasattr(self._lib, 'ratatui_terminal_set_cursor_position'):
+            raise RuntimeError('set cursor position not supported by FFI build')
+        self._lib.ratatui_terminal_set_cursor_position(C.c_uint16(int(x)), C.c_uint16(int(y)))
+
+    def get_viewport_area(self) -> Tuple[int, int, int, int]:
+        if not hasattr(self._lib, 'ratatui_terminal_get_viewport_area'):
+            raise RuntimeError('viewport area not supported by FFI build')
+        r = FfiRect(0, 0, 0, 0)
+        ok = self._lib.ratatui_terminal_get_viewport_area(C.byref(r))
+        if not ok:
+            raise RuntimeError('ratatui_terminal_get_viewport_area failed')
+        return (int(r.x), int(r.y), int(r.width), int(r.height))
+
+    def set_viewport_area(self, rect: RectLike) -> None:
+        if not hasattr(self._lib, 'ratatui_terminal_set_viewport_area'):
+            raise RuntimeError('set viewport area not supported by FFI build')
+        r = _ffi_rect(rect)
+        self._lib.ratatui_terminal_set_viewport_area(r)
 
     def next_event(self, timeout_ms: int) -> Optional[dict]:
         evt = FfiEvent()
@@ -373,6 +445,15 @@ class List:
         s = None if sym is None else sym.encode("utf-8")
         self._lib.ratatui_list_set_highlight_symbol(self._handle, s)
 
+    # Advanced list configuration (v0.2.0+)
+    def set_direction(self, vertical: bool = True) -> None:
+        if hasattr(self._lib, 'ratatui_list_set_direction'):
+            self._lib.ratatui_list_set_direction(self._handle, 0 if vertical else 1)
+
+    def set_scroll_offset(self, offset: int) -> None:
+        if hasattr(self._lib, 'ratatui_list_set_scroll_offset'):
+            self._lib.ratatui_list_set_scroll_offset(self._handle, C.c_uint16(int(offset)))
+
     def close(self) -> None:
         if getattr(self, "_handle", None):
             self._lib.ratatui_list_free(self._handle)
@@ -414,6 +495,31 @@ class Table:
     def set_highlight_symbol(self, sym: Optional[str]) -> None:
         s = None if sym is None else sym.encode("utf-8")
         self._lib.ratatui_table_set_highlight_symbol(self._handle, s)
+
+    # Advanced table configuration (v0.2.0+)
+    def set_widths(self, widths: Iterable[int]) -> None:
+        if hasattr(self._lib, 'ratatui_table_set_widths'):
+            vals = list(widths)
+            arr = (C.c_uint16 * len(vals))(*vals)
+            self._lib.ratatui_table_set_widths(self._handle, arr, len(arr))
+
+    def set_widths_percentages(self, percentages: Iterable[int]) -> None:
+        if hasattr(self._lib, 'ratatui_table_set_widths_percentages'):
+            vals = list(percentages)
+            arr = (C.c_uint16 * len(vals))(*vals)
+            self._lib.ratatui_table_set_widths_percentages(self._handle, arr, len(arr))
+
+    def set_row_height(self, height: int) -> None:
+        if hasattr(self._lib, 'ratatui_table_set_row_height'):
+            self._lib.ratatui_table_set_row_height(self._handle, C.c_uint16(int(height)))
+
+    def set_column_spacing(self, spacing: int) -> None:
+        if hasattr(self._lib, 'ratatui_table_set_column_spacing'):
+            self._lib.ratatui_table_set_column_spacing(self._handle, C.c_uint16(int(spacing)))
+
+    def set_highlight_spacing(self, spacing_mode: int) -> None:
+        if hasattr(self._lib, 'ratatui_table_set_highlight_spacing'):
+            self._lib.ratatui_table_set_highlight_spacing(self._handle, C.c_uint(int(spacing_mode)))
 
     def close(self) -> None:
         if getattr(self, "_handle", None):
@@ -794,3 +900,90 @@ class Frame:
     def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is None:
             self.ok = self._term.draw_frame(self._cmds)
+
+
+# Stateful list and table
+class ListState:
+    def __init__(self):
+        lib = load_library()
+        if not hasattr(lib, 'ratatui_list_state_new'):
+            raise RuntimeError('ratatui_ffi lacks ListState APIs')
+        ptr = lib.ratatui_list_state_new()
+        if not ptr:
+            raise RuntimeError('ratatui_list_state_new failed')
+        self._lib = lib
+        self._handle = C.c_void_p(ptr)
+
+    def set_selected(self, idx: Optional[int]) -> None:
+        self._lib.ratatui_list_state_set_selected(self._handle, -1 if idx is None else int(idx))
+
+    def set_offset(self, off: int) -> None:
+        self._lib.ratatui_list_state_set_offset(self._handle, C.c_uint16(int(off)))
+
+    def close(self) -> None:
+        if getattr(self, '_handle', None):
+            self._lib.ratatui_list_state_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+class TableState:
+    def __init__(self):
+        lib = load_library()
+        if not hasattr(lib, 'ratatui_table_state_new'):
+            raise RuntimeError('ratatui_ffi lacks TableState APIs')
+        ptr = lib.ratatui_table_state_new()
+        if not ptr:
+            raise RuntimeError('ratatui_table_state_new failed')
+        self._lib = lib
+        self._handle = C.c_void_p(ptr)
+
+    def set_selected(self, idx: Optional[int]) -> None:
+        self._lib.ratatui_table_state_set_selected(self._handle, -1 if idx is None else int(idx))
+
+    def set_offset(self, off: int) -> None:
+        self._lib.ratatui_table_state_set_offset(self._handle, C.c_uint16(int(off)))
+
+    def close(self) -> None:
+        if getattr(self, '_handle', None):
+            self._lib.ratatui_table_state_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+# Terminal helpers for stateful widgets
+def headless_render_list_state(width: int, height: int, lst: List, state: ListState) -> str:
+    lib = lst._lib
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_list_state(C.c_uint16(width), C.c_uint16(height), lst._handle, state._handle, C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        lib.ratatui_string_free(out)
+
+
+def _term_draw_list_state(term: Terminal, lst: List, state: ListState, rect: RectLike) -> bool:
+    r = _ffi_rect(rect)
+    return bool(term._lib.ratatui_terminal_draw_list_state_in(term._handle, lst._handle, state._handle, r))
+
+
+def _term_draw_table_state(term: Terminal, tbl: Table, state: TableState, rect: RectLike) -> bool:
+    r = _ffi_rect(rect)
+    return bool(term._lib.ratatui_terminal_draw_table_state_in(term._handle, tbl._handle, state._handle, r))
+
+
+# Attach methods to Terminal without breaking API surface
+setattr(Terminal, 'draw_list_state', lambda self, lst, state, rect: _term_draw_list_state(self, lst, state, rect))
+setattr(Terminal, 'draw_table_state', lambda self, tbl, state, rect: _term_draw_table_state(self, tbl, state, rect))
