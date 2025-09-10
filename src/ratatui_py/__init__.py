@@ -19,6 +19,8 @@ from .wrappers import (
     Style,
     rgb,
     color_indexed,
+    raw_mode,
+    alt_screen,
     List,
     Table,
     Gauge,

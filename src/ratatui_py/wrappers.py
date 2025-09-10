@@ -119,6 +119,32 @@ class Paragraph:
             self._lib.ratatui_paragraph_reserve_lines(self._handle, C.c_size_t(int(n)))
         return self
 
+    # Batch span helpers
+    def append_spans(self, spans: Sequence[tuple[str, "Style"]]) -> None:
+        if not hasattr(self._lib, 'ratatui_paragraph_append_spans'):
+            # fallback: join as a single line
+            for text, style in spans:
+                self.append_span(text, style)
+            return
+        arr, _keep = _build_spans(spans)
+        self._lib.ratatui_paragraph_append_spans(self._handle, arr, len(arr))
+
+    def append_line_spans(self, spans: Sequence[tuple[str, "Style"]]) -> None:
+        if not hasattr(self._lib, 'ratatui_paragraph_append_line_spans'):
+            self.append_spans(spans)
+            self.line_break()
+            return
+        arr, _keep = _build_spans(spans)
+        self._lib.ratatui_paragraph_append_line_spans(self._handle, arr, len(arr))
+
+    def append_lines_spans(self, lines: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
+        if not hasattr(self._lib, 'ratatui_paragraph_append_lines_spans'):
+            for line in lines:
+                self.append_line_spans(line)
+            return
+        lines_arr, _keep = _build_lines_spans(lines)
+        self._lib.ratatui_paragraph_append_lines_spans(self._handle, lines_arr, len(lines_arr))
+
     # Note: no __del_name__ shim; rely on __del__ below guardedly.
 
     def close(self) -> None:
@@ -461,6 +487,15 @@ class List:
         if hasattr(self._lib, 'ratatui_list_set_scroll_offset'):
             self._lib.ratatui_list_set_scroll_offset(self._handle, C.c_uint16(int(offset)))
 
+    def append_items_spans(self, items: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
+        if not hasattr(self._lib, 'ratatui_list_append_items_spans'):
+            for spans in items:
+                for text, style in spans:
+                    self.append_item(text, style)
+            return
+        arr, _keep = _build_lines_spans(items)
+        self._lib.ratatui_list_append_items_spans(self._handle, arr, len(arr))
+
     def close(self) -> None:
         if getattr(self, "_handle", None):
             self._lib.ratatui_list_free(self._handle)
@@ -528,6 +563,13 @@ class Table:
         if hasattr(self._lib, 'ratatui_table_set_highlight_spacing'):
             self._lib.ratatui_table_set_highlight_spacing(self._handle, C.c_uint(int(spacing_mode)))
 
+    def set_headers_spans(self, headers: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
+        if not hasattr(self._lib, 'ratatui_table_set_headers_spans'):
+            self.set_headers([''.join(text for text, _ in line) for line in headers])
+            return
+        arr, _keep = _build_lines_spans(headers)
+        self._lib.ratatui_table_set_headers_spans(self._handle, arr, len(arr))
+
     def close(self) -> None:
         if getattr(self, "_handle", None):
             self._lib.ratatui_table_free(self._handle)
@@ -591,6 +633,13 @@ class Tabs:
     def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
         t = title.encode("utf-8") if title is not None else None
         self._lib.ratatui_tabs_set_block_title(self._handle, t, bool(show_border))
+
+    def set_titles_spans(self, titles: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
+        if not hasattr(self._lib, 'ratatui_tabs_set_titles_spans'):
+            self.set_titles([''.join(text for text, _ in line) for line in titles])
+            return
+        arr, _keep = _build_lines_spans(titles)
+        self._lib.ratatui_tabs_set_titles_spans(self._handle, arr, len(arr))
 
     def close(self) -> None:
         if getattr(self, "_handle", None):
@@ -784,6 +833,18 @@ class Chart:
         yy = None if y is None else y.encode("utf-8")
         self._lib.ratatui_chart_set_axes_titles(self._handle, xx, yy)
 
+    def set_x_labels_spans(self, labels: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
+        if not hasattr(self._lib, 'ratatui_chart_set_x_labels_spans'):
+            return
+        arr, _keep = _build_lines_spans(labels)
+        self._lib.ratatui_chart_set_x_labels_spans(self._handle, arr, len(arr))
+
+    def set_y_labels_spans(self, labels: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
+        if not hasattr(self._lib, 'ratatui_chart_set_y_labels_spans'):
+            return
+        arr, _keep = _build_lines_spans(labels)
+        self._lib.ratatui_chart_set_y_labels_spans(self._handle, arr, len(arr))
+
     def set_block_title(self, title: Optional[str], show_border: bool = True) -> None:
         t = None if title is None else title.encode("utf-8")
         self._lib.ratatui_chart_set_block_title(self._handle, t, bool(show_border))
@@ -907,6 +968,59 @@ class Frame:
     def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is None:
             self.ok = self._term.draw_frame(self._cmds)
+
+
+def _build_spans(spans: Sequence[tuple[str, "Style"]]):
+    # Build an array[FfiSpan] and keep UTF-8 bytes alive across the call
+    bufs = [text.encode('utf-8') for text, _ in spans]
+    arr = (load_library().FfiSpan * len(spans))()
+    for i, (buf, (_, style)) in enumerate(zip(bufs, spans)):
+        arr[i] = load_library().FfiSpan(buf, style.to_ffi())
+    return arr, bufs
+
+
+def _build_lines_spans(lines: Sequence[Sequence[tuple[str, "Style"]]]):
+    # Build nested arrays: [FfiLineSpans] where each has spans pointer + len
+    span_arrays = []
+    keep: list[bytes] = []
+    FfiSpan = load_library().FfiSpan
+    FfiLineSpans = load_library().FfiLineSpans
+    for spans in lines:
+        bufs = [text.encode('utf-8') for text, _ in spans]
+        arr = (FfiSpan * len(spans))()
+        for i, (buf, (_, style)) in enumerate(zip(bufs, spans)):
+            arr[i] = FfiSpan(buf, style.to_ffi())
+        span_arrays.append((arr, bufs))
+        keep.extend(bufs)
+    out = (FfiLineSpans * len(lines))()
+    for i, (arr, _bufs) in enumerate(span_arrays):
+        out[i] = FfiLineSpans(arr, len(arr))
+    return out, keep
+
+
+# Terminal context managers for raw and alt modes
+class _RawMode:
+    def __enter__(self):
+        load_library().ratatui_terminal_enable_raw()
+        return self
+    def __exit__(self, exc_type, exc, tb):
+        load_library().ratatui_terminal_disable_raw()
+
+
+class _AltScreen:
+    def __enter__(self):
+        load_library().ratatui_terminal_enter_alt()
+        return self
+    def __exit__(self, exc_type, exc, tb):
+        load_library().ratatui_terminal_leave_alt()
+
+
+def raw_mode():
+    return _RawMode()
+
+
+def alt_screen():
+    return _AltScreen()
 
 
 # Color helpers (fast integer encoding; use FFI if available for parity)

@@ -216,6 +216,10 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     # v0.2.0 batching: spans and alignment controls
     if hasattr(lib, 'ratatui_paragraph_append_spans'):
         lib.ratatui_paragraph_append_spans.argtypes = [C.c_void_p, C.POINTER(FfiSpan), C.c_size_t]
+    if hasattr(lib, 'ratatui_paragraph_append_line_spans'):
+        lib.ratatui_paragraph_append_line_spans.argtypes = [C.c_void_p, C.POINTER(FfiSpan), C.c_size_t]
+    if hasattr(lib, 'ratatui_paragraph_append_lines_spans'):
+        lib.ratatui_paragraph_append_lines_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
     if hasattr(lib, 'ratatui_paragraph_set_alignment'):
         lib.ratatui_paragraph_set_alignment.argtypes = [C.c_void_p, C.c_uint]
     if hasattr(lib, 'ratatui_paragraph_set_block_title_alignment'):
@@ -251,6 +255,8 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_list_set_highlight_symbol.argtypes = [C.c_void_p, C.c_char_p]
     if hasattr(lib, 'ratatui_list_append_items_spans'):
         lib.ratatui_list_append_items_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
+    if hasattr(lib, 'ratatui_list_append_item_spans'):
+        lib.ratatui_list_append_item_spans.argtypes = [C.c_void_p, C.POINTER(FfiSpan), C.c_size_t]
     if hasattr(lib, 'ratatui_list_set_highlight_spacing'):
         lib.ratatui_list_set_highlight_spacing.argtypes = [C.c_void_p, C.c_uint]
     if hasattr(lib, 'ratatui_list_set_direction'):
@@ -278,6 +284,8 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     # v0.2.0 batching: headers/items/cells via spans/lines
     if hasattr(lib, 'ratatui_table_set_headers_spans'):
         lib.ratatui_table_set_headers_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
+    if hasattr(lib, 'ratatui_table_append_row_spans'):
+        lib.ratatui_table_append_row_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
     # FfiCellLines and FfiRowCellsLines are used for multiline cells
     class FfiCellLines(C.Structure):
         _fields_ = [
@@ -684,8 +692,10 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     if hasattr(lib, 'ratatui_chart_set_labels_alignment'): lib.ratatui_chart_set_labels_alignment
     if hasattr(lib, 'ratatui_chart_set_legend_position'): lib.ratatui_chart_set_legend_position
     if hasattr(lib, 'ratatui_chart_set_style'): lib.ratatui_chart_set_style
-    if hasattr(lib, 'ratatui_chart_set_x_labels_spans'): lib.ratatui_chart_set_x_labels_spans
-    if hasattr(lib, 'ratatui_chart_set_y_labels_spans'): lib.ratatui_chart_set_y_labels_spans
+    if hasattr(lib, 'ratatui_chart_set_x_labels_spans'):
+        lib.ratatui_chart_set_x_labels_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
+    if hasattr(lib, 'ratatui_chart_set_y_labels_spans'):
+        lib.ratatui_chart_set_y_labels_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
     if hasattr(lib, 'ratatui_headless_render_list_state'): lib.ratatui_headless_render_list_state
     if hasattr(lib, 'ratatui_linegauge_new'): lib.ratatui_linegauge_new
     if hasattr(lib, 'ratatui_linegauge_free'): lib.ratatui_linegauge_free
