@@ -93,21 +93,21 @@ jobs:
         with:
           pattern: wheels-*
           merge-multiple: true
-          if-no-files-found: warn
+          path: dist
       - uses: actions/download-artifact@v4
         with:
           name: sdist
-          path: .
+          path: dist
       - name: List distributions
         run: |
-          ls -lah
+          ls -lah dist || true
       - name: Check distributions
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install -U pip twine
           shopt -s nullglob
-          files=( ./*.whl ./*.tar.gz )
+          files=( dist/*.whl dist/*.tar.gz )
           echo "Distributions to check: ${files[@]:-<none>}"
           if ((${#files[@]})); then
             python -m twine check "${files[@]}"
@@ -117,7 +117,7 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: .
+          packages-dir: dist
           skip-existing: true
           verbose: true
           password: ${{ secrets.PYPI_API_TOKEN }}
