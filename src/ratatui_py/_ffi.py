@@ -22,6 +22,19 @@ class FfiStyle(C.Structure):
         ("mods", C.c_uint16),
     ]
 
+# Text span batching (v0.2.0+)
+class FfiSpan(C.Structure):
+    _fields_ = [
+        ("text_utf8", C.c_char_p),
+        ("style", FfiStyle),
+    ]
+
+class FfiLineSpans(C.Structure):
+    _fields_ = [
+        ("spans", C.POINTER(FfiSpan)),
+        ("len", C.c_size_t),
+    ]
+
 class FfiKeyEvent(C.Structure):
     _fields_ = [
         ("code", C.c_uint32),
@@ -120,6 +133,12 @@ FFI_WIDGET_KIND = {
     # 9 reserved for Scrollbar if feature-enabled
 }
 
+# Common enums exposed as ints (align with ratatui_ffi v0.2.0)
+FFI_ALIGN = {"Left": 0, "Center": 1, "Right": 2}
+FFI_LAYOUT_DIR = {"Vertical": 0, "Horizontal": 1}
+FFI_BORDERS = {"LEFT": 1, "RIGHT": 2, "TOP": 4, "BOTTOM": 8}
+FFI_BORDER_TYPE = {"Plain": 0, "Thick": 1, "Double": 2}
+
 # ----- Library loader -----
 
 def _default_names():
@@ -176,6 +195,11 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
                 raise last_err
 
     # Configure signatures
+    # Version and feature detection (v0.2.0+)
+    if hasattr(lib, 'ratatui_ffi_version'):
+        lib.ratatui_ffi_version.argtypes = [C.POINTER(C.c_uint16), C.POINTER(C.c_uint16), C.POINTER(C.c_uint16)]
+    if hasattr(lib, 'ratatui_ffi_feature_bits'):
+        lib.ratatui_ffi_feature_bits.restype = C.c_uint32
     lib.ratatui_init_terminal.restype = C.c_void_p
     lib.ratatui_terminal_clear.argtypes = [C.c_void_p]
     lib.ratatui_terminal_free.argtypes = [C.c_void_p]
@@ -189,6 +213,13 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_paragraph_new_empty.restype = C.c_void_p
     lib.ratatui_paragraph_append_span.argtypes = [C.c_void_p, C.c_char_p, FfiStyle]
     lib.ratatui_paragraph_line_break.argtypes = [C.c_void_p]
+    # v0.2.0 batching: spans and alignment controls
+    if hasattr(lib, 'ratatui_paragraph_append_spans'):
+        lib.ratatui_paragraph_append_spans.argtypes = [C.c_void_p, C.POINTER(FfiSpan), C.c_size_t]
+    if hasattr(lib, 'ratatui_paragraph_set_alignment'):
+        lib.ratatui_paragraph_set_alignment.argtypes = [C.c_void_p, C.c_uint]
+    if hasattr(lib, 'ratatui_paragraph_set_block_title_alignment'):
+        lib.ratatui_paragraph_set_block_title_alignment.argtypes = [C.c_void_p, C.c_uint]
 
     lib.ratatui_terminal_draw_paragraph.argtypes = [C.c_void_p, C.c_void_p]
     lib.ratatui_terminal_draw_paragraph.restype = C.c_bool
@@ -218,6 +249,10 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_list_set_selected.argtypes = [C.c_void_p, C.c_int]
     lib.ratatui_list_set_highlight_style.argtypes = [C.c_void_p, FfiStyle]
     lib.ratatui_list_set_highlight_symbol.argtypes = [C.c_void_p, C.c_char_p]
+    if hasattr(lib, 'ratatui_list_append_items_spans'):
+        lib.ratatui_list_append_items_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
+    if hasattr(lib, 'ratatui_list_set_highlight_spacing'):
+        lib.ratatui_list_set_highlight_spacing.argtypes = [C.c_void_p, C.c_uint]
     lib.ratatui_terminal_draw_list_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
     lib.ratatui_terminal_draw_list_in.restype = C.c_bool
     lib.ratatui_headless_render_list.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
@@ -236,6 +271,24 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_terminal_draw_table_in.restype = C.c_bool
     lib.ratatui_headless_render_table.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
     lib.ratatui_headless_render_table.restype = C.c_bool
+    # v0.2.0 batching: headers/items/cells via spans/lines
+    if hasattr(lib, 'ratatui_table_set_headers_spans'):
+        lib.ratatui_table_set_headers_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
+    # FfiCellLines and FfiRowCellsLines are used for multiline cells
+    class FfiCellLines(C.Structure):
+        _fields_ = [
+            ("lines", C.POINTER(FfiLineSpans)),
+            ("len", C.c_size_t),
+        ]
+    class FfiRowCellsLines(C.Structure):
+        _fields_ = [
+            ("cells", C.POINTER(FfiCellLines)),
+            ("len", C.c_size_t),
+        ]
+    lib.FfiCellLines = FfiCellLines
+    lib.FfiRowCellsLines = FfiRowCellsLines
+    if hasattr(lib, 'ratatui_table_append_row_cells_lines'):
+        lib.ratatui_table_append_row_cells_lines.argtypes = [C.c_void_p, C.POINTER(FfiCellLines), C.c_size_t]
 
     # Gauge
     lib.ratatui_gauge_new.restype = C.c_void_p
@@ -243,6 +296,9 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_gauge_set_ratio.argtypes = [C.c_void_p, C.c_float]
     lib.ratatui_gauge_set_label.argtypes = [C.c_void_p, C.c_char_p]
     lib.ratatui_gauge_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    _gauge_label_spans = getattr(lib, 'ratatui_gauge_set_label_spans', None)
+    if _gauge_label_spans is not None:
+        _gauge_label_spans.argtypes = [C.c_void_p, C.POINTER(FfiSpan), C.c_size_t]
     lib.ratatui_terminal_draw_gauge_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
     lib.ratatui_terminal_draw_gauge_in.restype = C.c_bool
     lib.ratatui_headless_render_gauge.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
@@ -254,6 +310,8 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_tabs_set_titles.argtypes = [C.c_void_p, C.c_char_p]
     lib.ratatui_tabs_set_selected.argtypes = [C.c_void_p, C.c_uint16]
     lib.ratatui_tabs_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    if hasattr(lib, 'ratatui_tabs_set_titles_spans'):
+        lib.ratatui_tabs_set_titles_spans.argtypes = [C.c_void_p, C.POINTER(FfiLineSpans), C.c_size_t]
     lib.ratatui_terminal_draw_tabs_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
     lib.ratatui_terminal_draw_tabs_in.restype = C.c_bool
     lib.ratatui_headless_render_tabs.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
@@ -314,10 +372,51 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_terminal_draw_frame.argtypes = [C.c_void_p, C.POINTER(FfiDrawCmd), C.c_size_t]
     lib.ratatui_terminal_draw_frame.restype = C.c_bool
 
+    # Layout helpers (v0.2.0+)
+    if hasattr(lib, 'ratatui_layout_split_ex'):
+        lib.ratatui_layout_split_ex.argtypes = [
+            C.c_uint16, C.c_uint16, C.c_uint,  # w, h, dir
+            C.POINTER(C.c_uint), C.POINTER(C.c_uint16), C.POINTER(C.c_uint16), C.c_size_t,  # kinds, valsA, valsB, len
+            C.c_uint16, C.c_uint16, C.c_uint16, C.c_uint16, C.c_uint16,  # spacing, ml, mt, mr, mb
+            C.POINTER(FfiRect), C.c_size_t,  # out rects, cap
+        ]
+    if hasattr(lib, 'ratatui_layout_split_ex2'):
+        lib.ratatui_layout_split_ex2.argtypes = [
+            C.c_uint16, C.c_uint16, C.c_uint,  # w, h, dir
+            C.POINTER(C.c_uint), C.POINTER(C.c_uint16), C.POINTER(C.c_uint16), C.c_size_t,  # kinds, valsA, valsB, len
+            C.c_uint16, C.c_uint16, C.c_uint16, C.c_uint16, C.c_uint16,  # spacing, ml, mt, mr, mb
+            C.POINTER(FfiRect), C.c_size_t,  # out rects, cap
+        ]
+
     # Headless frame render (for testing composites)
     if hasattr(lib, 'ratatui_headless_render_frame'):
         lib.ratatui_headless_render_frame.argtypes = [C.c_uint16, C.c_uint16, C.POINTER(FfiDrawCmd), C.c_size_t, C.POINTER(C.c_char_p)]
         lib.ratatui_headless_render_frame.restype = C.c_bool
+    # Extended headless outputs (v0.2.0+)
+    if hasattr(lib, 'ratatui_headless_render_frame_styles_ex'):
+        # Keep types permissive; function fills style dump via char** similar to text
+        lib.ratatui_headless_render_frame_styles_ex.argtypes = [C.c_uint16, C.c_uint16, C.POINTER(FfiDrawCmd), C.c_size_t, C.POINTER(C.c_char_p)]
+        lib.ratatui_headless_render_frame_styles_ex.restype = C.c_bool
+    if hasattr(lib, 'ratatui_headless_render_frame_cells'):
+        # Returns number of cells written (width*height) into provided buffer
+        class FfiCellInfo(C.Structure):
+            _fields_ = [
+                ("ch", C.c_uint32),
+                ("fg", C.c_uint32),
+                ("bg", C.c_uint32),
+                ("mods", C.c_uint16),
+            ]
+        lib.FfiCellInfo = FfiCellInfo
+        lib.ratatui_headless_render_frame_cells.argtypes = [C.c_uint16, C.c_uint16, C.POINTER(FfiDrawCmd), C.c_size_t, C.POINTER(FfiCellInfo), C.c_size_t]
+        lib.ratatui_headless_render_frame_cells.restype = C.c_size_t
+
+    # Color helpers (v0.2.0+)
+    if hasattr(lib, 'ratatui_color_rgb'):
+        lib.ratatui_color_rgb.argtypes = [C.c_uint8, C.c_uint8, C.c_uint8]
+        lib.ratatui_color_rgb.restype = C.c_uint32
+    if hasattr(lib, 'ratatui_color_indexed'):
+        lib.ratatui_color_indexed.argtypes = [C.c_uint8]
+        lib.ratatui_color_indexed.restype = C.c_uint32
 
     _cached_lib = lib
     return lib
