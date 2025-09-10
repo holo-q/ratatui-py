@@ -20,6 +20,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            pyproject.toml
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-${{ runner.os }}-${{ env.RATATUI_FFI_TAG }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
 
       - name: Install cibuildwheel
         run: |
@@ -35,9 +48,9 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
           CIBW_BEFORE_ALL_WINDOWS: powershell -Command "irm https://win.rustup.rs -UseBasicParsing | iex; rustup-init -y --profile minimal"
           # Ensure cargo is on PATH in build env
-          CIBW_ENVIRONMENT_LINUX: PATH=$HOME/.cargo/bin:$PATH
-          CIBW_ENVIRONMENT_MACOS: PATH=$HOME/.cargo/bin:$PATH
-          CIBW_ENVIRONMENT_WINDOWS: PATH=%USERPROFILE%\/.cargo/bin;%PATH%
+          CIBW_ENVIRONMENT_LINUX: PATH=$HOME/.cargo/bin:$PATH PIP_CACHE_DIR=$HOME/.cache/pip
+          CIBW_ENVIRONMENT_MACOS: PATH=$HOME/.cargo/bin:$PATH PIP_CACHE_DIR=$HOME/.cache/pip
+          CIBW_ENVIRONMENT_WINDOWS: PATH=%USERPROFILE%\/.cargo/bin;%PATH% PIP_CACHE_DIR=%LocalAppData%\pip\Cache
           # Optionally pin the bundled ffi version (matches setup.py default)
           RATATUI_FFI_TAG: v0.1.5
         run: |
