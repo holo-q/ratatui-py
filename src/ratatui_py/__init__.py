@@ -21,6 +21,7 @@ from .wrappers import (
     color_indexed,
     raw_mode,
     alt_screen,
+    terminal_session,
     List,
     Table,
     Gauge,

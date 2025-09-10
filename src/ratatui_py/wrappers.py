@@ -1229,6 +1229,47 @@ def alt_screen():
     return _AltScreen()
 
 
+# One-stop terminal session: creates Terminal, toggles raw/alt, cleans up.
+class _TerminalSession:
+    def __init__(self, *, raw: bool = True, alt: bool = True, clear: bool = False):
+        self._raw = bool(raw)
+        self._alt = bool(alt)
+        self._clear = bool(clear)
+        self.term: Optional[Terminal] = None
+
+    def __enter__(self) -> Terminal:
+        t = Terminal()
+        # Enable modes if available; keep it minimal and fast.
+        if self._raw and hasattr(t._lib, 'ratatui_terminal_enable_raw'):
+            t.enable_raw()
+        if self._alt and hasattr(t._lib, 'ratatui_terminal_enter_alt'):
+            t.enter_alt()
+        if self._clear:
+            try:
+                t.clear()
+            except Exception:
+                pass
+        self.term = t
+        return t
+
+    def __exit__(self, exc_type, exc, tb):
+        t = self.term
+        if t is not None:
+            try:
+                if self._alt and hasattr(t._lib, 'ratatui_terminal_leave_alt'):
+                    t.leave_alt()
+            finally:
+                try:
+                    if self._raw and hasattr(t._lib, 'ratatui_terminal_disable_raw'):
+                        t.disable_raw()
+                finally:
+                    t.close()
+
+
+def terminal_session(*, raw: bool = True, alt: bool = True, clear: bool = False) -> _TerminalSession:
+    return _TerminalSession(raw=raw, alt=alt, clear=clear)
+
+
 # Color helpers (fast integer encoding; use FFI if available for parity)
 def rgb(r: int, g: int, b: int) -> int:
     lib = load_library()
