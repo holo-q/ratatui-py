@@ -249,6 +249,24 @@ class Terminal:
         r = _ffi_rect(rect)
         return bool(self._lib.ratatui_terminal_draw_chart_in(self._handle, c._handle, r))
 
+    def draw_canvas(self, canvas: "Canvas", rect: RectLike) -> bool:
+        if not hasattr(self._lib, 'ratatui_terminal_draw_canvas_in'):
+            return False
+        r = _ffi_rect(rect)
+        return bool(self._lib.ratatui_terminal_draw_canvas_in(self._handle, canvas._handle, r))
+
+    def draw_logo(self, rect: RectLike) -> bool:
+        if not hasattr(self._lib, 'ratatui_ratatuilogo_draw_in'):
+            return False
+        r = _ffi_rect(rect)
+        return bool(self._lib.ratatui_ratatuilogo_draw_in(self._handle, r))
+
+    def draw_logo_sized(self, rect: RectLike, size: int) -> bool:
+        if not hasattr(self._lib, 'ratatui_ratatuilogo_draw_sized_in'):
+            return False
+        r = _ffi_rect(rect)
+        return bool(self._lib.ratatui_ratatuilogo_draw_sized_in(self._handle, r, C.c_uint32(int(size))))
+
     def draw_frame(self, cmds: Sequence["DrawCmd"]) -> bool:
         FfiDrawCmd = self._lib.FfiDrawCmd
         arr = (FfiDrawCmd * len(cmds))()
@@ -882,6 +900,28 @@ class Chart:
         yy = None if y is None else y.encode("utf-8")
         self._lib.ratatui_chart_set_axes_titles(self._handle, xx, yy)
 
+    def set_bounds(self, x_min: float, x_max: float, y_min: float, y_max: float) -> None:
+        if hasattr(self._lib, 'ratatui_chart_set_bounds'):
+            self._lib.ratatui_chart_set_bounds(self._handle, C.c_double(x_min), C.c_double(x_max), C.c_double(y_min), C.c_double(y_max))
+
+    def set_style(self, style: Style) -> None:
+        if hasattr(self._lib, 'ratatui_chart_set_style'):
+            self._lib.ratatui_chart_set_style(self._handle, style.to_ffi())
+
+    def set_axis_styles(self, x_style: Style, y_style: Style) -> None:
+        if hasattr(self._lib, 'ratatui_chart_set_axis_styles'):
+            self._lib.ratatui_chart_set_axis_styles(self._handle, x_style.to_ffi(), y_style.to_ffi())
+
+    def set_legend_position(self, pos: int) -> None:
+        if hasattr(self._lib, 'ratatui_chart_set_legend_position'):
+            self._lib.ratatui_chart_set_legend_position(self._handle, C.c_uint(int(pos)))
+
+    def set_hidden_legend_constraints(self, kinds2: Sequence[int], values2: Sequence[int]) -> None:
+        if hasattr(self._lib, 'ratatui_chart_set_hidden_legend_constraints'):
+            k = (C.c_uint32 * len(kinds2))(*[int(x) for x in kinds2])
+            v = (C.c_uint16 * len(values2))(*[int(x) for x in values2])
+            self._lib.ratatui_chart_set_hidden_legend_constraints(self._handle, k, v)
+
     def set_x_labels_spans(self, labels: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
         if not hasattr(self._lib, 'ratatui_chart_set_x_labels_spans'):
             return
@@ -922,6 +962,34 @@ def headless_render_chart(width: int, height: int, c: Chart) -> str:
         return ""
     try:
         return C.cast(out, C.c_char_p).value.decode("utf-8", errors="replace")
+    finally:
+        lib.ratatui_string_free(out)
+
+
+def headless_render_logo(width: int, height: int) -> str:
+    lib = load_library()
+    if not hasattr(lib, 'ratatui_headless_render_ratatuilogo'):
+        return ""
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_ratatuilogo(C.c_uint16(width), C.c_uint16(height), C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode('utf-8', errors='replace')
+    finally:
+        lib.ratatui_string_free(out)
+
+
+def headless_render_logo_sized(width: int, height: int, size: int) -> str:
+    lib = load_library()
+    if not hasattr(lib, 'ratatui_headless_render_ratatuilogo_sized'):
+        return ""
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_ratatuilogo_sized(C.c_uint16(width), C.c_uint16(height), C.c_uint32(int(size)), C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode('utf-8', errors='replace')
     finally:
         lib.ratatui_string_free(out)
 
@@ -1024,6 +1092,78 @@ class Frame:
 
     def chart(self, c: "Chart", rect: RectLike) -> None:
         self._cmds.append(DrawCmd.chart(c, rect))
+
+    def canvas(self, cv: "Canvas", rect: RectLike) -> None:
+        self._cmds.append(DrawCmd(FFI_WIDGET_KIND.get("Canvas", 0), cv._handle, _ffi_rect(rect), owner=cv))
+
+
+class Canvas:
+    def __init__(self, x_min: float = 0.0, x_max: float = 1.0, y_min: float = 0.0, y_max: float = 1.0):
+        self._lib = load_library()
+        if not hasattr(self._lib, 'ratatui_canvas_new'):
+            raise RuntimeError('ratatui_ffi lacks Canvas APIs')
+        ptr = self._lib.ratatui_canvas_new(C.c_double(x_min), C.c_double(x_max), C.c_double(y_min), C.c_double(y_max))
+        if not ptr:
+            raise RuntimeError('ratatui_canvas_new failed')
+        self._handle = C.c_void_p(ptr)
+
+    def set_bounds(self, x_min: float, x_max: float, y_min: float, y_max: float) -> "Canvas":
+        self._lib.ratatui_canvas_set_bounds(self._handle, C.c_double(x_min), C.c_double(x_max), C.c_double(y_min), C.c_double(y_max))
+        return self
+
+    def set_background_color(self, color: int) -> "Canvas":
+        self._lib.ratatui_canvas_set_background_color(self._handle, C.c_uint32(int(color)))
+        return self
+
+    def set_block_title(self, title: Optional[str], show_border: bool = True) -> "Canvas":
+        t = None if title is None else title.encode('utf-8')
+        self._lib.ratatui_canvas_set_block_title(self._handle, t, bool(show_border))
+        return self
+
+    def set_block_title_alignment(self, align: str | int) -> "Canvas":
+        if hasattr(self._lib, 'ratatui_canvas_set_block_title_alignment'):
+            self._lib.ratatui_canvas_set_block_title_alignment(self._handle, C.c_uint(_align_value(align)))
+        return self
+
+    def set_marker(self, marker: int) -> "Canvas":
+        self._lib.ratatui_canvas_set_marker(self._handle, C.c_uint32(int(marker)))
+        return self
+
+    def add_line(self, x1: float, y1: float, x2: float, y2: float, style: Optional[Style] = None) -> None:
+        self._lib.ratatui_canvas_add_line(self._handle, C.c_double(x1), C.c_double(y1), C.c_double(x2), C.c_double(y2), (style or Style()).to_ffi())
+
+    def add_rect(self, x: float, y: float, w: float, h: float, style: Optional[Style] = None, filled: bool = False) -> None:
+        self._lib.ratatui_canvas_add_rect(self._handle, C.c_double(x), C.c_double(y), C.c_double(w), C.c_double(h), (style or Style()).to_ffi(), bool(filled))
+
+    def add_points(self, points: Sequence[Tuple[float, float]], style: Optional[Style] = None, marker: int = 0) -> None:
+        vals: list[float] = []
+        for (x, y) in points:
+            vals.extend([float(x), float(y)])
+        arr = (C.c_double * len(vals))(*vals)
+        self._lib.ratatui_canvas_add_points(self._handle, arr, len(points), (style or Style()).to_ffi(), C.c_uint32(int(marker)))
+
+    def close(self) -> None:
+        if getattr(self, '_handle', None):
+            self._lib.ratatui_canvas_free(self._handle)
+            self._handle = None
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+def headless_render_canvas(width: int, height: int, canvas: Canvas) -> str:
+    lib = canvas._lib
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_canvas(C.c_uint16(width), C.c_uint16(height), canvas._handle, C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode('utf-8', errors='replace')
+    finally:
+        lib.ratatui_string_free(out)
 
     def extend(self, cmds: Sequence[DrawCmd]) -> None:
         self._cmds.extend(cmds)

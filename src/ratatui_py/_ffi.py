@@ -374,6 +374,16 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     lib.ratatui_terminal_draw_chart_in.restype = C.c_bool
     lib.ratatui_headless_render_chart.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
     lib.ratatui_headless_render_chart.restype = C.c_bool
+    if hasattr(lib, 'ratatui_chart_set_bounds'):
+        lib.ratatui_chart_set_bounds.argtypes = [C.c_void_p, C.c_double, C.c_double, C.c_double, C.c_double]
+    if hasattr(lib, 'ratatui_chart_set_style'):
+        lib.ratatui_chart_set_style.argtypes = [C.c_void_p, FfiStyle]
+    if hasattr(lib, 'ratatui_chart_set_axis_styles'):
+        lib.ratatui_chart_set_axis_styles.argtypes = [C.c_void_p, FfiStyle, FfiStyle]
+    if hasattr(lib, 'ratatui_chart_set_legend_position'):
+        lib.ratatui_chart_set_legend_position.argtypes = [C.c_void_p, C.c_uint]
+    if hasattr(lib, 'ratatui_chart_set_hidden_legend_constraints'):
+        lib.ratatui_chart_set_hidden_legend_constraints.argtypes = [C.c_void_p, C.POINTER(C.c_uint32), C.POINTER(C.c_uint16)]
 
     # Sparkline
     lib.ratatui_sparkline_new.restype = C.c_void_p
@@ -459,6 +469,49 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
     if hasattr(lib, 'ratatui_clear_in'):
         lib.ratatui_clear_in.argtypes = [C.c_void_p, FfiRect]
         lib.ratatui_clear_in.restype = C.c_bool
+    # Canvas widget
+    if hasattr(lib, 'ratatui_canvas_new'):
+        lib.ratatui_canvas_new.argtypes = [C.c_double, C.c_double, C.c_double, C.c_double]
+        lib.ratatui_canvas_new.restype = C.c_void_p
+    if hasattr(lib, 'ratatui_canvas_free'):
+        lib.ratatui_canvas_free.argtypes = [C.c_void_p]
+    if hasattr(lib, 'ratatui_canvas_set_bounds'):
+        lib.ratatui_canvas_set_bounds.argtypes = [C.c_void_p, C.c_double, C.c_double, C.c_double, C.c_double]
+    if hasattr(lib, 'ratatui_canvas_set_background_color'):
+        lib.ratatui_canvas_set_background_color.argtypes = [C.c_void_p, C.c_uint32]
+    if hasattr(lib, 'ratatui_canvas_set_block_title'):
+        lib.ratatui_canvas_set_block_title.argtypes = [C.c_void_p, C.c_char_p, C.c_bool]
+    if hasattr(lib, 'ratatui_canvas_set_block_title_alignment'):
+        lib.ratatui_canvas_set_block_title_alignment.argtypes = [C.c_void_p, C.c_uint]
+    if hasattr(lib, 'ratatui_canvas_set_block_adv'):
+        lib.ratatui_canvas_set_block_adv.argtypes = [C.c_void_p, C.c_uint8, C.c_uint32, C.c_uint16, C.c_uint16, C.c_uint16, C.c_uint16, C.POINTER(FfiSpan), C.c_size_t]
+    if hasattr(lib, 'ratatui_canvas_set_marker'):
+        lib.ratatui_canvas_set_marker.argtypes = [C.c_void_p, C.c_uint32]
+    if hasattr(lib, 'ratatui_canvas_add_line'):
+        lib.ratatui_canvas_add_line.argtypes = [C.c_void_p, C.c_double, C.c_double, C.c_double, C.c_double, FfiStyle]
+    if hasattr(lib, 'ratatui_canvas_add_rect'):
+        lib.ratatui_canvas_add_rect.argtypes = [C.c_void_p, C.c_double, C.c_double, C.c_double, C.c_double, FfiStyle, C.c_bool]
+    if hasattr(lib, 'ratatui_canvas_add_points'):
+        lib.ratatui_canvas_add_points.argtypes = [C.c_void_p, C.POINTER(C.c_double), C.c_size_t, FfiStyle, C.c_uint32]
+    if hasattr(lib, 'ratatui_terminal_draw_canvas_in'):
+        lib.ratatui_terminal_draw_canvas_in.argtypes = [C.c_void_p, C.c_void_p, FfiRect]
+        lib.ratatui_terminal_draw_canvas_in.restype = C.c_bool
+    if hasattr(lib, 'ratatui_headless_render_canvas'):
+        lib.ratatui_headless_render_canvas.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.POINTER(C.c_char_p)]
+        lib.ratatui_headless_render_canvas.restype = C.c_bool
+    # Ratatui logo
+    if hasattr(lib, 'ratatui_ratatuilogo_draw_in'):
+        lib.ratatui_ratatuilogo_draw_in.argtypes = [C.c_void_p, FfiRect]
+        lib.ratatui_ratatuilogo_draw_in.restype = C.c_bool
+    if hasattr(lib, 'ratatui_ratatuilogo_draw_sized_in'):
+        lib.ratatui_ratatuilogo_draw_sized_in.argtypes = [C.c_void_p, FfiRect, C.c_uint32]
+        lib.ratatui_ratatuilogo_draw_sized_in.restype = C.c_bool
+    if hasattr(lib, 'ratatui_headless_render_ratatuilogo'):
+        lib.ratatui_headless_render_ratatuilogo.argtypes = [C.c_uint16, C.c_uint16, C.POINTER(C.c_char_p)]
+        lib.ratatui_headless_render_ratatuilogo.restype = C.c_bool
+    if hasattr(lib, 'ratatui_headless_render_ratatuilogo_sized'):
+        lib.ratatui_headless_render_ratatuilogo_sized.argtypes = [C.c_uint16, C.c_uint16, C.c_uint32, C.POINTER(C.c_char_p)]
+        lib.ratatui_headless_render_ratatuilogo_sized.restype = C.c_bool
 
     # ---- Additional v0.2.0 exports (ensure discovery and link-through) ----
     # Terminal raw/alt + cursor/viewport

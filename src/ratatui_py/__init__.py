@@ -29,6 +29,7 @@ from .wrappers import (
     Sparkline,
     Scrollbar,
     Chart,
+    Canvas,
     ListState,
     TableState,
     DrawCmd,
@@ -41,6 +42,9 @@ from .wrappers import (
     headless_render_barchart,
     headless_render_sparkline,
     headless_render_chart,
+    headless_render_canvas,
+    headless_render_logo,
+    headless_render_logo_sized,
 )
 from .layout import margin, split_h, split_v, margin_rect, split_h_rect, split_v_rect
 from .util import frame_begin, BackgroundTask, ProcessTask
