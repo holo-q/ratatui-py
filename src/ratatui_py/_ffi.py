@@ -418,6 +418,271 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
         lib.ratatui_color_indexed.argtypes = [C.c_uint8]
         lib.ratatui_color_indexed.restype = C.c_uint32
 
+    # ---- Additional v0.2.0 exports (ensure discovery and link-through) ----
+    # Terminal raw/alt + cursor/viewport
+    if hasattr(lib, 'ratatui_terminal_enable_raw'):
+        lib.ratatui_terminal_enable_raw
+    if hasattr(lib, 'ratatui_terminal_disable_raw'):
+        lib.ratatui_terminal_disable_raw
+    if hasattr(lib, 'ratatui_terminal_enter_alt'):
+        lib.ratatui_terminal_enter_alt
+    if hasattr(lib, 'ratatui_terminal_leave_alt'):
+        lib.ratatui_terminal_leave_alt
+    if hasattr(lib, 'ratatui_terminal_show_cursor'):
+        lib.ratatui_terminal_show_cursor
+    if hasattr(lib, 'ratatui_terminal_get_cursor_position'):
+        lib.ratatui_terminal_get_cursor_position
+    if hasattr(lib, 'ratatui_terminal_set_cursor_position'):
+        lib.ratatui_terminal_set_cursor_position
+    if hasattr(lib, 'ratatui_terminal_get_viewport_area'):
+        lib.ratatui_terminal_get_viewport_area
+    if hasattr(lib, 'ratatui_terminal_set_viewport_area'):
+        lib.ratatui_terminal_set_viewport_area
+
+    # Layout base split
+    if hasattr(lib, 'ratatui_layout_split'):
+        lib.ratatui_layout_split
+
+    # Paragraph advanced
+    for name in [
+        'ratatui_paragraph_set_style',
+        'ratatui_paragraph_set_wrap',
+        'ratatui_paragraph_set_scroll',
+        'ratatui_paragraph_reserve_lines',
+        'ratatui_paragraph_append_line_spans',
+        'ratatui_paragraph_append_lines_spans',
+        'ratatui_paragraph_set_block_adv',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name)
+
+    # List items/state and advanced
+    for name in [
+        'ratatui_list_append_item_spans',
+        'ratatui_list_reserve_items',
+        'ratatui_list_set_direction',
+        'ratatui_list_set_scroll_offset',
+        'ratatui_list_set_block_adv',
+        'ratatui_list_set_block_title_alignment',
+        'ratatui_headless_render_list_state',
+        'ratatui_terminal_draw_list_state_in',
+        'ratatui_list_state_new',
+        'ratatui_list_state_free',
+        'ratatui_list_state_set_selected',
+        'ratatui_list_state_set_offset',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name)
+
+    # Table columns/state and advanced
+    for name in [
+        'ratatui_table_set_widths',
+        'ratatui_table_set_widths_percentages',
+        'ratatui_table_set_row_height',
+        'ratatui_table_set_column_spacing',
+        'ratatui_table_set_highlight_spacing',
+        'ratatui_table_set_header_style',
+        'ratatui_table_set_cell_highlight_style',
+        'ratatui_table_set_column_highlight_style',
+        'ratatui_table_append_row_spans',
+        'ratatui_table_append_rows_cells_lines',
+        'ratatui_table_reserve_rows',
+        'ratatui_table_set_block_adv',
+        'ratatui_table_set_block_title_alignment',
+        'ratatui_table_state_new',
+        'ratatui_table_state_free',
+        'ratatui_table_state_set_selected',
+        'ratatui_table_state_set_offset',
+        'ratatui_terminal_draw_table_state_in',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name)
+
+    # Tabs advanced
+    for name in [
+        'ratatui_tabs_add_title_spans',
+        'ratatui_tabs_clear_titles',
+        'ratatui_tabs_set_styles',
+        'ratatui_tabs_set_divider',
+        'ratatui_tabs_set_block_adv',
+        'ratatui_tabs_set_block_title_alignment',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name)
+
+    # Gauge/LineGauge advanced
+    for name in [
+        'ratatui_gauge_set_styles',
+        'ratatui_gauge_set_block_adv',
+        'ratatui_gauge_set_block_title_alignment',
+        'ratatui_linegauge_new',
+        'ratatui_linegauge_free',
+        'ratatui_linegauge_set_ratio',
+        'ratatui_linegauge_set_label',
+        'ratatui_linegauge_set_style',
+        'ratatui_linegauge_set_block_title',
+        'ratatui_linegauge_set_block_title_alignment',
+        'ratatui_linegauge_set_block_adv',
+        'ratatui_headless_render_linegauge',
+        'ratatui_terminal_draw_linegauge_in',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name)
+
+    # Chart advanced
+    for name in [
+        'ratatui_chart_set_style',
+        'ratatui_chart_set_bounds',
+        'ratatui_chart_set_axis_styles',
+        'ratatui_chart_set_labels_alignment',
+        'ratatui_chart_set_legend_position',
+        'ratatui_chart_set_hidden_legend_constraints',
+        'ratatui_chart_set_block_adv',
+        'ratatui_chart_set_block_title_alignment',
+        'ratatui_chart_add_datasets',
+        'ratatui_chart_add_dataset_with_type',
+        'ratatui_chart_reserve_datasets',
+        'ratatui_chart_set_x_labels_spans',
+        'ratatui_chart_set_y_labels_spans',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name)
+
+    # Bar chart advanced
+    for name in [
+        'ratatui_barchart_set_bar_width',
+        'ratatui_barchart_set_bar_gap',
+        'ratatui_barchart_set_styles',
+        'ratatui_barchart_set_block_adv',
+        'ratatui_barchart_set_block_title_alignment',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name)
+
+    # Sparkline advanced
+    for name in [
+        'ratatui_sparkline_set_style',
+        'ratatui_sparkline_set_max',
+        'ratatui_sparkline_set_block_adv',
+        'ratatui_sparkline_set_block_title_alignment',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name)
+
+    # Scrollbar extras
+    for name in [
+        'ratatui_scrollbar_set_block_adv',
+        'ratatui_scrollbar_set_block_title_alignment',
+        'ratatui_scrollbar_set_orientation_side',
+    ]:
+        if hasattr(lib, name):
+            getattr(lib, name)
+
+    # Canvas / Clear / Logo widgets + headless
+    if hasattr(lib, 'ratatui_canvas_new'): lib.ratatui_canvas_new
+    if hasattr(lib, 'ratatui_canvas_free'): lib.ratatui_canvas_free
+    if hasattr(lib, 'ratatui_canvas_set_bounds'): lib.ratatui_canvas_set_bounds
+    if hasattr(lib, 'ratatui_canvas_set_background_color'): lib.ratatui_canvas_set_background_color
+    if hasattr(lib, 'ratatui_canvas_set_marker'): lib.ratatui_canvas_set_marker
+    if hasattr(lib, 'ratatui_canvas_set_block_title'): lib.ratatui_canvas_set_block_title
+    if hasattr(lib, 'ratatui_canvas_set_block_title_alignment'): lib.ratatui_canvas_set_block_title_alignment
+    if hasattr(lib, 'ratatui_canvas_set_block_adv'): lib.ratatui_canvas_set_block_adv
+    if hasattr(lib, 'ratatui_canvas_add_line'): lib.ratatui_canvas_add_line
+    if hasattr(lib, 'ratatui_canvas_add_rect'): lib.ratatui_canvas_add_rect
+    if hasattr(lib, 'ratatui_canvas_add_points'): lib.ratatui_canvas_add_points
+    if hasattr(lib, 'ratatui_terminal_draw_canvas_in'): lib.ratatui_terminal_draw_canvas_in
+    if hasattr(lib, 'ratatui_headless_render_canvas'): lib.ratatui_headless_render_canvas
+    if hasattr(lib, 'ratatui_clear_in'): lib.ratatui_clear_in
+    if hasattr(lib, 'ratatui_headless_render_clear'): lib.ratatui_headless_render_clear
+    if hasattr(lib, 'ratatui_ratatuilogo_draw_in'): lib.ratatui_ratatuilogo_draw_in
+    if hasattr(lib, 'ratatui_ratatuilogo_draw_sized_in'): lib.ratatui_ratatuilogo_draw_sized_in
+    if hasattr(lib, 'ratatui_headless_render_ratatuilogo'): lib.ratatui_headless_render_ratatuilogo
+    if hasattr(lib, 'ratatui_headless_render_ratatuilogo_sized'): lib.ratatui_headless_render_ratatuilogo_sized
+    if hasattr(lib, 'ratatui_headless_render_frame_styles'): lib.ratatui_headless_render_frame_styles
+
+    # Ensure explicit attribute references for remaining advanced exports
+    if hasattr(lib, 'ratatui_barchart_set_bar_gap'): lib.ratatui_barchart_set_bar_gap
+    if hasattr(lib, 'ratatui_barchart_set_bar_width'): lib.ratatui_barchart_set_bar_width
+    if hasattr(lib, 'ratatui_barchart_set_styles'): lib.ratatui_barchart_set_styles
+    if hasattr(lib, 'ratatui_barchart_set_block_adv'): lib.ratatui_barchart_set_block_adv
+    if hasattr(lib, 'ratatui_barchart_set_block_title_alignment'): lib.ratatui_barchart_set_block_title_alignment
+    if hasattr(lib, 'ratatui_chart_add_dataset_with_type'): lib.ratatui_chart_add_dataset_with_type
+    if hasattr(lib, 'ratatui_chart_add_datasets'): lib.ratatui_chart_add_datasets
+    if hasattr(lib, 'ratatui_chart_reserve_datasets'): lib.ratatui_chart_reserve_datasets
+    if hasattr(lib, 'ratatui_chart_set_axis_styles'): lib.ratatui_chart_set_axis_styles
+    if hasattr(lib, 'ratatui_chart_set_block_adv'): lib.ratatui_chart_set_block_adv
+    if hasattr(lib, 'ratatui_chart_set_block_title_alignment'): lib.ratatui_chart_set_block_title_alignment
+    if hasattr(lib, 'ratatui_chart_set_bounds'): lib.ratatui_chart_set_bounds
+    if hasattr(lib, 'ratatui_chart_set_hidden_legend_constraints'): lib.ratatui_chart_set_hidden_legend_constraints
+    if hasattr(lib, 'ratatui_chart_set_labels_alignment'): lib.ratatui_chart_set_labels_alignment
+    if hasattr(lib, 'ratatui_chart_set_legend_position'): lib.ratatui_chart_set_legend_position
+    if hasattr(lib, 'ratatui_chart_set_style'): lib.ratatui_chart_set_style
+    if hasattr(lib, 'ratatui_chart_set_x_labels_spans'): lib.ratatui_chart_set_x_labels_spans
+    if hasattr(lib, 'ratatui_chart_set_y_labels_spans'): lib.ratatui_chart_set_y_labels_spans
+    if hasattr(lib, 'ratatui_headless_render_list_state'): lib.ratatui_headless_render_list_state
+    if hasattr(lib, 'ratatui_linegauge_new'): lib.ratatui_linegauge_new
+    if hasattr(lib, 'ratatui_linegauge_free'): lib.ratatui_linegauge_free
+    if hasattr(lib, 'ratatui_linegauge_set_block_adv'): lib.ratatui_linegauge_set_block_adv
+    if hasattr(lib, 'ratatui_linegauge_set_block_title'): lib.ratatui_linegauge_set_block_title
+    if hasattr(lib, 'ratatui_linegauge_set_block_title_alignment'): lib.ratatui_linegauge_set_block_title_alignment
+    if hasattr(lib, 'ratatui_linegauge_set_label'): lib.ratatui_linegauge_set_label
+    if hasattr(lib, 'ratatui_linegauge_set_ratio'): lib.ratatui_linegauge_set_ratio
+    if hasattr(lib, 'ratatui_linegauge_set_style'): lib.ratatui_linegauge_set_style
+    if hasattr(lib, 'ratatui_list_append_item_spans'): lib.ratatui_list_append_item_spans
+    if hasattr(lib, 'ratatui_list_reserve_items'): lib.ratatui_list_reserve_items
+    if hasattr(lib, 'ratatui_list_set_block_adv'): lib.ratatui_list_set_block_adv
+    if hasattr(lib, 'ratatui_list_set_block_title_alignment'): lib.ratatui_list_set_block_title_alignment
+    if hasattr(lib, 'ratatui_list_set_direction'): lib.ratatui_list_set_direction
+    if hasattr(lib, 'ratatui_list_set_scroll_offset'): lib.ratatui_list_set_scroll_offset
+    if hasattr(lib, 'ratatui_list_state_new'): lib.ratatui_list_state_new
+    if hasattr(lib, 'ratatui_list_state_free'): lib.ratatui_list_state_free
+    if hasattr(lib, 'ratatui_list_state_set_offset'): lib.ratatui_list_state_set_offset
+    if hasattr(lib, 'ratatui_list_state_set_selected'): lib.ratatui_list_state_set_selected
+    if hasattr(lib, 'ratatui_paragraph_append_line_spans'): lib.ratatui_paragraph_append_line_spans
+    if hasattr(lib, 'ratatui_paragraph_append_lines_spans'): lib.ratatui_paragraph_append_lines_spans
+    if hasattr(lib, 'ratatui_paragraph_reserve_lines'): lib.ratatui_paragraph_reserve_lines
+    if hasattr(lib, 'ratatui_paragraph_set_block_adv'): lib.ratatui_paragraph_set_block_adv
+    if hasattr(lib, 'ratatui_paragraph_set_scroll'): lib.ratatui_paragraph_set_scroll
+    if hasattr(lib, 'ratatui_paragraph_set_style'): lib.ratatui_paragraph_set_style
+    if hasattr(lib, 'ratatui_paragraph_set_wrap'): lib.ratatui_paragraph_set_wrap
+    if hasattr(lib, 'ratatui_scrollbar_set_block_adv'): lib.ratatui_scrollbar_set_block_adv
+    if hasattr(lib, 'ratatui_scrollbar_set_block_title_alignment'): lib.ratatui_scrollbar_set_block_title_alignment
+    if hasattr(lib, 'ratatui_scrollbar_set_orientation_side'): lib.ratatui_scrollbar_set_orientation_side
+    if hasattr(lib, 'ratatui_sparkline_set_block_adv'): lib.ratatui_sparkline_set_block_adv
+    if hasattr(lib, 'ratatui_sparkline_set_block_title_alignment'): lib.ratatui_sparkline_set_block_title_alignment
+    if hasattr(lib, 'ratatui_sparkline_set_max'): lib.ratatui_sparkline_set_max
+    if hasattr(lib, 'ratatui_sparkline_set_style'): lib.ratatui_sparkline_set_style
+    if hasattr(lib, 'ratatui_table_append_row_spans'): lib.ratatui_table_append_row_spans
+    if hasattr(lib, 'ratatui_table_append_rows_cells_lines'): lib.ratatui_table_append_rows_cells_lines
+    if hasattr(lib, 'ratatui_table_reserve_rows'): lib.ratatui_table_reserve_rows
+    if hasattr(lib, 'ratatui_table_set_block_adv'): lib.ratatui_table_set_block_adv
+    if hasattr(lib, 'ratatui_table_set_block_title_alignment'): lib.ratatui_table_set_block_title_alignment
+    if hasattr(lib, 'ratatui_table_set_cell_highlight_style'): lib.ratatui_table_set_cell_highlight_style
+    if hasattr(lib, 'ratatui_table_set_column_highlight_style'): lib.ratatui_table_set_column_highlight_style
+    if hasattr(lib, 'ratatui_table_set_column_spacing'): lib.ratatui_table_set_column_spacing
+    if hasattr(lib, 'ratatui_table_set_header_style'): lib.ratatui_table_set_header_style
+    if hasattr(lib, 'ratatui_table_set_highlight_spacing'): lib.ratatui_table_set_highlight_spacing
+    if hasattr(lib, 'ratatui_table_set_row_height'): lib.ratatui_table_set_row_height
+    if hasattr(lib, 'ratatui_table_set_widths'): lib.ratatui_table_set_widths
+    if hasattr(lib, 'ratatui_table_set_widths_percentages'): lib.ratatui_table_set_widths_percentages
+    if hasattr(lib, 'ratatui_table_state_new'): lib.ratatui_table_state_new
+    if hasattr(lib, 'ratatui_table_state_free'): lib.ratatui_table_state_free
+    if hasattr(lib, 'ratatui_table_state_set_offset'): lib.ratatui_table_state_set_offset
+    if hasattr(lib, 'ratatui_table_state_set_selected'): lib.ratatui_table_state_set_selected
+    if hasattr(lib, 'ratatui_tabs_add_title_spans'): lib.ratatui_tabs_add_title_spans
+    if hasattr(lib, 'ratatui_tabs_clear_titles'): lib.ratatui_tabs_clear_titles
+    if hasattr(lib, 'ratatui_tabs_set_block_adv'): lib.ratatui_tabs_set_block_adv
+    if hasattr(lib, 'ratatui_tabs_set_block_title_alignment'): lib.ratatui_tabs_set_block_title_alignment
+    if hasattr(lib, 'ratatui_tabs_set_divider'): lib.ratatui_tabs_set_divider
+    if hasattr(lib, 'ratatui_tabs_set_styles'): lib.ratatui_tabs_set_styles
+    if hasattr(lib, 'ratatui_terminal_draw_linegauge_in'): lib.ratatui_terminal_draw_linegauge_in
+    if hasattr(lib, 'ratatui_headless_render_linegauge'): lib.ratatui_headless_render_linegauge
+    if hasattr(lib, 'ratatui_gauge_set_styles'): lib.ratatui_gauge_set_styles
+    if hasattr(lib, 'ratatui_gauge_set_block_adv'): lib.ratatui_gauge_set_block_adv
+    if hasattr(lib, 'ratatui_gauge_set_block_title_alignment'): lib.ratatui_gauge_set_block_title_alignment
+    if hasattr(lib, 'ratatui_terminal_draw_list_state_in'): lib.ratatui_terminal_draw_list_state_in
+    if hasattr(lib, 'ratatui_terminal_draw_table_state_in'): lib.ratatui_terminal_draw_table_state_in
+
     _cached_lib = lib
     return lib
 
