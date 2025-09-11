@@ -9,9 +9,6 @@ interfaces (TUIs). Use Ratatui’s performant rendering and widget set
 from Python via `ctypes`, with prebuilt shared libraries bundled for
 Linux, macOS, and Windows.
 
-Preview
-[![Dashboard demo](docs/assets/dashboard.gif)](docs/assets/dashboard.cast)
-
 Key features:
 - Zero-build install: bundles a prebuilt shared library when available
   and falls back to building from source when configured.
@@ -31,10 +28,15 @@ uv add ratatui-py
 Try the interactive demos without installing into your environment:
 
 ```
-uvx --from ratatui-py ratatui-py-demos
-# or a specific one
-uvx --from ratatui-py ratatui-py-dashboard
+uvx ratatui-py
 ```
+
+Note on first run: if a platform wheel isn’t available, the package falls back to a
+local build (when Rust is installed) to fetch and compile the `ratatui_ffi` cdylib.
+This is automatic and cached; disable with `RATATUI_FFI_AUTO_BUILD=0`.
+
+If you’ve already installed the package, the same commands are available on
+your PATH (e.g., `ratatui-py-demos`).
 
 ## Quick start
 
@@ -81,7 +83,9 @@ with terminal_session(raw=True, alt=True, clear=True) as term:
     term.next_event(1000)
 ```
 
-## Widgets demo (List + Table + Gauge)
+## Examples
+
+### List + Table + Gauge
 
 ```python
 from ratatui_py import Terminal, List, Table, Gauge, Style, FFI_COLOR
@@ -107,20 +111,6 @@ with Terminal() as term:
     term.draw_gauge(g, (0,12,20,3))
 ```
 
-## Demos (via uvx, no install)
-
-The easiest way to try things out is with `uvx` — it downloads and runs the
-demo entry points in an isolated, ephemeral environment:
-
-```
-# One‑liner demo hub
-uvx ratatui-py
-
-# Specific demos
-uvx --from ratatui-py ratatui-py-dashboard
-uvx --from ratatui-py ratatui-py-hello
-```
-
 ### Canvas + Logo (extras)
 
 Draw shapes with `Canvas`, and optionally render the Ratatui logo for fun:
@@ -137,20 +127,6 @@ with Terminal() as term:
     if h >= 12:
         term.draw_logo((0, h-12, w, 12))
 ```
-
-Note on first run: if a platform wheel isn’t available, the package falls back to a
-local build (when Rust is installed) to fetch and compile the `ratatui_ffi` cdylib.
-This is automatic and cached; disable with `RATATUI_FFI_AUTO_BUILD=0`.
-
-If you’ve already installed the package, the same commands are available on
-your PATH (e.g., `ratatui-py-demos`).
-
-
-## Environment variables
-- `RATATUI_FFI_LIB`: absolute path to a prebuilt shared library to bundle/load.
-- `RATATUI_FFI_SRC`: path to local ratatui-ffi source to build with cargo.
-- `RATATUI_FFI_GIT`: override git URL (default `https://github.com/holo-q/ratatui-ffi.git`).
-- `RATATUI_FFI_TAG`: git tag/commit to fetch for bundling (default `v0.2.0`).
 
 ### Advanced installation and bundling
 
@@ -348,6 +324,15 @@ Ratatui (via crossterm) uses raw mode and (optionally) the alternate screen. Som
 - Unicode/emoji rendering
   - Ensure your locale is UTF‑8 and your font supports the glyphs you render. Some terminals need explicit configuration.
 
+### Environment variables
+
+The following variables exist in case they are needed
+
+- `RATATUI_FFI_LIB`: absolute path to a prebuilt shared library to bundle/load.
+- `RATATUI_FFI_SRC`: path to local ratatui-ffi source to build with cargo.
+- `RATATUI_FFI_GIT`: override git URL (default `https://github.com/holo-q/ratatui-ffi.git`).
+- `RATATUI_FFI_TAG`: git tag/commit to fetch for bundling (default `v0.2.0`).
+
 ### Stable diagnostics and backtraces
 
 Turn on robust diagnostics only when needed:
@@ -412,7 +397,7 @@ Build rich, fast TUIs in Python without giving up a modern rendering engine.
 - Testability: headless render helpers generate text snapshots for fast,
   deterministic tests in CI without a TTY.
 
-How this differs from common pure‑Python TUI stacks (respectfully, no names):
+How this differs from common pure‑Python TUI stacks:
 
 - Rendering model
   - ratatui‑py: double‑buffered composition with batched draws; minimizes
