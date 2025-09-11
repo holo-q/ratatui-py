@@ -4,6 +4,9 @@ import ctypes as C
 from typing import Optional
 from ctypes.util import find_library
 from pathlib import Path
+import shutil
+import tempfile
+import subprocess
 
 # ----- Low-level FFI types -----
 
@@ -192,7 +195,32 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
                 except OSError as e:
                     last_err = e
             if lib is None and last_err:
-                raise last_err
+                # Optional: auto-build from source as a last resort if cargo is available
+                auto = os.getenv("RATATUI_FFI_AUTO_BUILD", "1")
+                if auto != "0" and shutil.which("cargo"):
+                    try:
+                        git_url = os.getenv("RATATUI_FFI_GIT", "https://github.com/holo-q/ratatui-ffi.git")
+                        tag = os.getenv("RATATUI_FFI_TAG", "v0.2.0")
+                        cache_dir = Path(os.getenv("XDG_CACHE_HOME", Path.home() / ".cache")) / "ratatui-py" / "ffi" / tag
+                        cache_dir.mkdir(parents=True, exist_ok=True)
+                        dst = cache_dir / ("ratatui_ffi.dll" if sys.platform.startswith("win") else ("libratatui_ffi.dylib" if sys.platform == "darwin" else "libratatui_ffi.so"))
+                        if not dst.exists():
+                            with tempfile.TemporaryDirectory() as td:
+                                subprocess.check_call(["git", "init"], cwd=td)
+                                subprocess.check_call(["git", "remote", "add", "origin", git_url], cwd=td)
+                                subprocess.check_call(["git", "fetch", "--depth", "1", "origin", tag], cwd=td)
+                                subprocess.check_call(["git", "checkout", "FETCH_HEAD"], cwd=td)
+                                # build release by default
+                                subprocess.check_call(["cargo", "build", "--release"], cwd=td)
+                                built = Path(td) / "target" / "release" / dst.name
+                                if not built.exists():
+                                    raise FileNotFoundError(str(built))
+                                shutil.copy2(built, dst)
+                        lib = C.CDLL(str(dst))
+                    except Exception:
+                        raise last_err
+                else:
+                    raise last_err
 
     # Configure signatures
     # Version and feature detection (v0.2.0+)

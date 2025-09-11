@@ -42,6 +42,7 @@ ratatui-py-widgets = "ratatui_py.examples:widgets_main"
 ratatui-py-life = "ratatui_py.examples:life_main"
 ratatui-py-demos = "ratatui_py.demo_runner:run_demo_hub"
 ratatui-py-dashboard = "ratatui_py.demo_runner:run_dashboard"
+ratatui-py = "ratatui_py.demo_runner:run_demo_hub"
 ratatui-ffi-audit-ts = "ratatui_py.tools.ffi_coverage_ts:main"
 ratatui-ffi-audit-py = "ratatui_py.tools.ffi_coverage_py:main"
 
