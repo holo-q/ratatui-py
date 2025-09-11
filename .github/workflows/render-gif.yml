@@ -28,8 +28,23 @@ jobs:
             -t solarized-dark -S 2 -s 2 \
             /data/docs/assets/dashboard.cast /data/docs/assets/dashboard.gif
 
+      - name: Convert GIF to MP4 (ffmpeg)
+        if: ${{ hashFiles('docs/assets/dashboard.gif') != '' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          # Ensure even dimensions for H.264 and faststart for web playback
+          ffmpeg -y -i docs/assets/dashboard.gif -movflags +faststart -pix_fmt yuv420p \
+            -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" docs/assets/dashboard.mp4
+
       - name: Commit GIF if changed
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs: add/update dashboard GIF rendered from cast"
           file_pattern: docs/assets/dashboard.gif
+
+      - name: Commit MP4 if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: add/update dashboard MP4 rendered from cast"
+          file_pattern: docs/assets/dashboard.mp4
