@@ -10,18 +10,33 @@ This shows how to record the `ratatui-py-dashboard` demo and generate an embedda
 asciinema rec demo.cast -c "ratatui-py-dashboard"
 ```
 
-2) Convert to GIF using the official converter (needs Docker):
+2) Convert to GIF
+
+Option A (preferred): asciinema-agg (install via Homebrew or cargo)
 
 ```
-docker run --rm -v "$PWD":/data asciinema/asciicast2gif \
-  -t solarized-dark -S 2 -s 2 demo.cast docs/assets/dashboard.gif
+asciinema-agg --fps 60 --idle 2 demo.cast docs/assets/dashboard.gif
+```
+
+Option B: asciicast2gif (requires PhantomJS)
+
+```
+asciicast2gif -t solarized-dark -S 2 -s 2 demo.cast docs/assets/dashboard.gif
+# Ensure 'phantomjs' is installed or PHANTOMJS_BIN is set
 ```
 
 - `-t` theme (try: `tango`, `solarized-dark`, `solarized-light`)
 - `-S` speed multiplier (2x)
 - `-s` scale factor (2x)
 
-3) Commit `docs/assets/dashboard.gif` and it will render in README/docs.
+3) Optionally convert GIF to MP4 for smoother playback in browsers:
+
+```
+ffmpeg -y -i docs/assets/dashboard.gif -movflags +faststart -pix_fmt yuv420p \
+  -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" docs/assets/dashboard.mp4
+```
+
+4) Commit `docs/assets/dashboard.gif` (and `.mp4`) and it will render in README/docs.
 
 ## Option B: Asciinema + SVG (svg-term)
 
@@ -58,4 +73,3 @@ asciinema upload demo.cast
 - Use a clean background (e.g., solarized-dark) for legibility.
 - Resize your terminal to a common size (e.g., 100x30) before recording.
 - Keep the clip short (10–20 seconds) and show the core interactions: tabs (a/d), selection (j/k), spike (r), quit (q).
-
