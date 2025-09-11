@@ -2,7 +2,6 @@
 
 [![PyPI](https://img.shields.io/pypi/v/ratatui-py.svg)](https://pypi.org/project/ratatui-py/)
 [![Docs](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml)
-[![CI](https://github.com/holo-q/ratatui-py/actions/workflows/ci.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/ci.yml)
 
 Fast, zero-build Python bindings for [ratatui_ffi], the C ABI for
 [Ratatui] — a modern Rust library for building rich terminal user
