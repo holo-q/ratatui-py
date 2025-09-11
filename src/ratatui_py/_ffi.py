@@ -195,38 +195,50 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
                 except OSError as e:
                     last_err = e
             if lib is None and last_err:
-                # Optional: auto-build from source as a last resort if cargo is available
+                # Optional: auto-build from source as a last resort
                 auto = os.getenv("RATATUI_FFI_AUTO_BUILD", "1")
-                if auto != "0" and shutil.which("cargo"):
-                    try:
-                        git_url = os.getenv("RATATUI_FFI_GIT", "https://github.com/holo-q/ratatui-ffi.git")
-                        tag = os.getenv("RATATUI_FFI_TAG", "v0.2.0")
-                        cache_dir = Path(os.getenv("XDG_CACHE_HOME", Path.home() / ".cache")) / "ratatui-py" / "ffi" / tag
-                        cache_dir.mkdir(parents=True, exist_ok=True)
-                        dst = cache_dir / ("ratatui_ffi.dll" if sys.platform.startswith("win") else ("libratatui_ffi.dylib" if sys.platform == "darwin" else "libratatui_ffi.so"))
-                        if not dst.exists():
-                            if os.getenv("RATATUI_FFI_PROGRESS", "1") not in ("0", "false", "False", ""):
-                                sys.stderr.write(f"ratatui-py: building ratatui_ffi {tag} (first run) ...\n")
-                                sys.stderr.flush()
-                            with tempfile.TemporaryDirectory() as td:
-                                subprocess.check_call(["git", "init"], cwd=td)
-                                subprocess.check_call(["git", "remote", "add", "origin", git_url], cwd=td)
-                                subprocess.check_call(["git", "fetch", "--depth", "1", "origin", tag], cwd=td)
-                                subprocess.check_call(["git", "checkout", "FETCH_HEAD"], cwd=td)
-                                # build release by default
-                                subprocess.check_call(["cargo", "build", "--release"], cwd=td)
-                                built = Path(td) / "target" / "release" / dst.name
-                                if not built.exists():
-                                    raise FileNotFoundError(str(built))
-                                shutil.copy2(built, dst)
-                            if os.getenv("RATATUI_FFI_PROGRESS", "1") not in ("0", "false", "False", ""):
-                                sys.stderr.write("ratatui-py: build complete.\n")
-                                sys.stderr.flush()
-                        lib = C.CDLL(str(dst))
-                    except Exception:
-                        raise last_err
+                if auto != "0":
+                    if shutil.which("cargo"):
+                        try:
+                            git_url = os.getenv("RATATUI_FFI_GIT", "https://github.com/holo-q/ratatui-ffi.git")
+                            tag = os.getenv("RATATUI_FFI_TAG", "v0.2.0")
+                            cache_dir = Path(os.getenv("XDG_CACHE_HOME", Path.home() / ".cache")) / "ratatui-py" / "ffi" / tag
+                            cache_dir.mkdir(parents=True, exist_ok=True)
+                            dst = cache_dir / ("ratatui_ffi.dll" if sys.platform.startswith("win") else ("libratatui_ffi.dylib" if sys.platform == "darwin" else "libratatui_ffi.so"))
+                            if not dst.exists():
+                                if os.getenv("RATATUI_FFI_PROGRESS", "1") not in ("0", "false", "False", ""):
+                                    sys.stderr.write(f"ratatui-py: building ratatui_ffi {tag} (first run) ...\n")
+                                    sys.stderr.flush()
+                                with tempfile.TemporaryDirectory() as td:
+                                    subprocess.check_call(["git", "init"], cwd=td)
+                                    subprocess.check_call(["git", "remote", "add", "origin", git_url], cwd=td)
+                                    subprocess.check_call(["git", "fetch", "--depth", "1", "origin", tag], cwd=td)
+                                    subprocess.check_call(["git", "checkout", "FETCH_HEAD"], cwd=td)
+                                    # build release by default
+                                    subprocess.check_call(["cargo", "build", "--release"], cwd=td)
+                                    built = Path(td) / "target" / "release" / dst.name
+                                    if not built.exists():
+                                        raise FileNotFoundError(str(built))
+                                    shutil.copy2(built, dst)
+                                if os.getenv("RATATUI_FFI_PROGRESS", "1") not in ("0", "false", "False", ""):
+                                    sys.stderr.write("ratatui-py: build complete.\n")
+                                    sys.stderr.flush()
+                            lib = C.CDLL(str(dst))
+                        except Exception as e:
+                            raise RuntimeError(
+                                "Failed to auto-build ratatui_ffi; install Rust/cargo, or set RATATUI_FFI_LIB to a prebuilt library, "
+                                "or disable auto-build with RATATUI_FFI_AUTO_BUILD=0."
+                            ) from e
+                    else:
+                        raise RuntimeError(
+                            "No bundled or system ratatui_ffi found, and cargo is not available to auto-build. "
+                            "Install Rust (cargo), set RATATUI_FFI_LIB to a prebuilt .so/.dylib/.dll, or disable auto-build with RATATUI_FFI_AUTO_BUILD=0."
+                        ) from last_err
                 else:
-                    raise last_err
+                    raise RuntimeError(
+                        "No bundled or system ratatui_ffi found. Set RATATUI_FFI_LIB to a prebuilt .so/.dylib/.dll, "
+                        "or install Rust (cargo) and enable auto-build via RATATUI_FFI_AUTO_BUILD=1."
+                    ) from last_err
 
     # Configure signatures
     # Version and feature detection (v0.2.0+)
