@@ -1,8 +1,6 @@
 # ratatui-py — Python bindings for Ratatui (Rust TUI)
 
 [![PyPI](https://img.shields.io/pypi/v/ratatui-py.svg)](https://pypi.org/project/ratatui-py/)
-![Python Versions](https://img.shields.io/pypi/pyversions/ratatui-py.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
 [![Docs](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml)
 [![CI](https://github.com/holo-q/ratatui-py/actions/workflows/ci.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/ci.yml)
 
