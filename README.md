@@ -67,6 +67,20 @@ def on_event(term: Terminal, evt: dict, state: dict) -> bool:
 App(render=render, on_event=on_event, tick_ms=250).run({})
 ```
 
+### One‑liner session and spans
+
+Snappy, minimal setup for a full session (raw + alt screen), plus per‑span styling:
+
+```python
+from ratatui_py import terminal_session, Paragraph, Style, rgb
+
+with terminal_session(raw=True, alt=True, clear=True) as term:
+    spans = [("Hello ", Style()), ("world", Style(fg=rgb(0,180,255)).bold())]
+    p = Paragraph.new_empty().append_lines_spans([spans])
+    term.draw_paragraph(p, (0,0,*term.size()))
+    term.next_event(1000)
+```
+
 ## Widgets demo (List + Table + Gauge)
 
 ```python
@@ -98,6 +112,23 @@ with Terminal() as term:
 The easiest way to try things out is with `uvx` — it downloads and runs the
 demo entry points in an isolated, ephemeral environment:
 
+```
+
+### Canvas + Logo (extras)
+
+Draw shapes with `Canvas`, and optionally render the Ratatui logo for fun:
+
+```python
+from ratatui_py import Terminal, Canvas, Style, rgb
+
+with Terminal() as term:
+    w, h = term.size()
+    cv = Canvas(0.0, 100.0, 0.0, 100.0)
+    cv.add_rect(10,10,80,60, Style(fg=rgb(0,255,255)))
+    cv.add_line(10,10,90,70, Style(fg=rgb(255,128,0)))
+    term.draw_canvas(cv, (0,0,w,h))
+    if h >= 12:
+        term.draw_logo((0, h-12, w, 12))
 ```
 uvx --from ratatui-py ratatui-py-demos
 uvx --from ratatui-py ratatui-py-dashboard
