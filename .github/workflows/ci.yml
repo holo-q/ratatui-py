@@ -8,7 +8,6 @@ on:
 
 jobs:
   test:
-    continue-on-error: true
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -16,58 +15,21 @@ jobs:
         python-version: [ '3.9', '3.10', '3.11', '3.12' ]
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust (for ratatui_ffi build)
-        run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-        continue-on-error: true
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
           cache-dependency-path: |
             pyproject.toml
-        continue-on-error: true
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install ruff mypy pytest
-        continue-on-error: true
-      - name: Cache cargo registry (for ratatui_ffi build)
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: cargo-${{ runner.os }}-${{ env.RATATUI_FFI_TAG }}
-          restore-keys: |
-            cargo-${{ runner.os }}-
-      - name: Build/bundle ratatui_ffi for tests
-        env:
-          RATATUI_FFI_TAG: v0.1.5
-          RATATUI_FFI_PROFILE: release
+          pip install ruff pytest
+      - name: Configure FFI env
         run: |
-          python - << 'PY'
-          from ratatui_py._bootstrap import ensure_runtime_lib
-          ensure_runtime_lib()
-          print('Bundled runtime lib for tests.')
-          PY
-          # Export path to bundled library for reliable loading during tests
-          LIBDIR="$(python - <<'PY'
-import pathlib
-import ratatui_py, sys
-p = pathlib.Path(ratatui_py.__file__).resolve().parent / '_bundled'
-print(p)
-PY
-)"
-          echo "RATATUI_FFI_LIB=$LIBDIR/$(python - <<'PY'
-import sys
-print('ratatui_ffi.dll' if sys.platform.startswith('win') else ('libratatui_ffi.dylib' if sys.platform=='darwin' else 'libratatui_ffi.so'))
-PY
-)" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$LIBDIR:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        continue-on-error: true
+          echo "RATATUI_FFI_TAG=v0.2.0" >> $GITHUB_ENV
+          echo "RATATUI_FFI_AUTO_BUILD=1" >> $GITHUB_ENV
       - name: Show bundled library info
         run: |
           echo "RATATUI_FFI_LIB=$RATATUI_FFI_LIB"
@@ -82,14 +44,10 @@ print('Bundled dir exists:', pkg, pkg.exists(), 'contents:', list(pkg.iterdir())
 PY
       - name: Lint (src only)
         run: ruff check src
-        continue-on-error: true
       # Optional: enable mypy once types are finalized for bindings
       # - name: Type check
       #   run: mypy src
-      - name: Tests (layout only for now)
+      - name: Tests
         env:
-          RATATUI_FFI_LIB: ${{ env.RATATUI_FFI_LIB }}
-          LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
           PYTHONPATH: ${{ github.workspace }}/src
-        run: pytest -q -vv tests/test_layout.py
-        continue-on-error: true
+        run: pytest -q

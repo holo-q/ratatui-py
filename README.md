@@ -128,10 +128,17 @@ with Terminal() as term:
     if h >= 12:
         term.draw_logo((0, h-12, w, 12))
 ```
-uvx --from ratatui-py ratatui-py-demos
+# One‑liner demo hub
+uvx ratatui-py
+
+# Specific demos
 uvx --from ratatui-py ratatui-py-dashboard
 uvx --from ratatui-py ratatui-py-hello
 ```
+
+Note on first run: if a platform wheel isn’t available, the package falls back to a
+local build (when Rust is installed) to fetch and compile the `ratatui_ffi` cdylib.
+This is automatic and cached; disable with `RATATUI_FFI_AUTO_BUILD=0`.
 
 If you’ve already installed the package, the same commands are available on
 your PATH (e.g., `ratatui-py-demos`).
