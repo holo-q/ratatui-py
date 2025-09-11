@@ -52,7 +52,7 @@ jobs:
           CIBW_ENVIRONMENT_MACOS: PATH=$HOME/.cargo/bin:$PATH PIP_CACHE_DIR=$HOME/.cache/pip
           CIBW_ENVIRONMENT_WINDOWS: PATH=%USERPROFILE%\/.cargo/bin;%PATH% PIP_CACHE_DIR=%LocalAppData%\pip\Cache
           # Optionally pin the bundled ffi version (matches setup.py default)
-          RATATUI_FFI_TAG: v0.1.5
+          RATATUI_FFI_TAG: v0.2.0
         run: |
           python -m cibuildwheel --output-dir wheelhouse
 

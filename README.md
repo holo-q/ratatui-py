@@ -141,7 +141,7 @@ your PATH (e.g., `ratatui-py-demos`).
 - `RATATUI_FFI_LIB`: absolute path to a prebuilt shared library to bundle/load.
 - `RATATUI_FFI_SRC`: path to local ratatui-ffi source to build with cargo.
 - `RATATUI_FFI_GIT`: override git URL (default `https://github.com/holo-q/ratatui-ffi.git`).
-- `RATATUI_FFI_TAG`: git tag/commit to fetch for bundling (default `v0.1.5`).
+- `RATATUI_FFI_TAG`: git tag/commit to fetch for bundling (default `v0.2.0`).
 
 ### Advanced installation and bundling
 
