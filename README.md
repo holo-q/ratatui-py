@@ -9,12 +9,9 @@ interfaces (TUIs). Use Ratatui’s performant rendering and widget set
 from Python via `ctypes`, with prebuilt shared libraries bundled for
 Linux, macOS, and Windows.
 
-<<<<<<< HEAD
-=======
-Preview
+
 [![Dashboard demo](docs/assets/dashboard.gif)](docs/assets/dashboard.mp4)
 
->>>>>>> 1e7c475 (docs(ci): render MP4 from cast via ffmpeg and link it from README preview)
 Key features:
 - Zero-build install: bundles a prebuilt shared library when available
   and falls back to building from source when configured.
