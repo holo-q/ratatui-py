@@ -47,21 +47,19 @@ have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
 render_cast_to_gif() {
   local cast="$1" gif="$2" theme="${3:-solarized-dark}" speed="${4:-2}" scale="${5:-2}"
-  if have_cmd docker; then
-    echo "[cast->gif] docker asciicast2gif: $cast -> $gif (theme=$theme speed=$speed scale=$scale)"
-    if [ "$DRY_RUN" -eq 0 ]; then
-      docker run --rm -v "$PWD":/data asciinema/asciicast2gif \
-        -t "$theme" -S "$speed" -s "$scale" \
-        "/data/$cast" "/data/$gif"
-    fi
-  elif have_cmd asciinema-agg; then
+  if have_cmd asciinema-agg; then
     local fps=$((30 * speed))
     echo "[cast->gif] asciinema-agg: $cast -> $gif (fps=$fps)"
     if [ "$DRY_RUN" -eq 0 ]; then
       asciinema-agg --fps "$fps" --idle 2 "$cast" "$gif"
     fi
+  elif have_cmd asciicast2gif; then
+    echo "[cast->gif] asciicast2gif: $cast -> $gif (theme=$theme speed=$speed scale=$scale)"
+    if [ "$DRY_RUN" -eq 0 ]; then
+      asciicast2gif -t "$theme" -S "$speed" -s "$scale" "$cast" "$gif"
+    fi
   else
-    echo "ERROR: need either Docker (asciinema/asciicast2gif) or 'asciinema-agg' installed" >&2
+    echo "ERROR: need 'asciinema-agg' or 'asciicast2gif' installed (no Docker)." >&2
     return 1
   fi
 }
@@ -135,4 +133,3 @@ while IFS=$'\t' read -r cast gif mp4 theme speed scale rest; do
 done < "$INDEX"
 
 exit "$rc"
-
