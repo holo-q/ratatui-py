@@ -205,6 +205,9 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
                         cache_dir.mkdir(parents=True, exist_ok=True)
                         dst = cache_dir / ("ratatui_ffi.dll" if sys.platform.startswith("win") else ("libratatui_ffi.dylib" if sys.platform == "darwin" else "libratatui_ffi.so"))
                         if not dst.exists():
+                            if os.getenv("RATATUI_FFI_PROGRESS", "1") not in ("0", "false", "False", ""):
+                                sys.stderr.write(f"ratatui-py: building ratatui_ffi {tag} (first run) ...\n")
+                                sys.stderr.flush()
                             with tempfile.TemporaryDirectory() as td:
                                 subprocess.check_call(["git", "init"], cwd=td)
                                 subprocess.check_call(["git", "remote", "add", "origin", git_url], cwd=td)
@@ -216,6 +219,9 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
                                 if not built.exists():
                                     raise FileNotFoundError(str(built))
                                 shutil.copy2(built, dst)
+                            if os.getenv("RATATUI_FFI_PROGRESS", "1") not in ("0", "false", "False", ""):
+                                sys.stderr.write("ratatui-py: build complete.\n")
+                                sys.stderr.flush()
                         lib = C.CDLL(str(dst))
                     except Exception:
                         raise last_err
