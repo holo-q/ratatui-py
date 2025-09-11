@@ -345,6 +345,19 @@ class Terminal:
             }
         return {"kind": "none"}
 
+    # Event injection (for tests/automation)
+    def inject_key(self, code: int, ch: int = 0, mods: int = 0) -> None:
+        if hasattr(self._lib, 'ratatui_inject_key'):
+            self._lib.ratatui_inject_key(C.c_uint32(int(code)), C.c_uint32(int(ch)), C.c_uint8(int(mods)))
+
+    def inject_resize(self, width: int, height: int) -> None:
+        if hasattr(self._lib, 'ratatui_inject_resize'):
+            self._lib.ratatui_inject_resize(C.c_uint16(int(width)), C.c_uint16(int(height)))
+
+    def inject_mouse(self, kind: int, btn: int, x: int, y: int, mods: int = 0) -> None:
+        if hasattr(self._lib, 'ratatui_inject_mouse'):
+            self._lib.ratatui_inject_mouse(C.c_uint32(int(kind)), C.c_uint32(int(btn)), C.c_uint16(int(x)), C.c_uint16(int(y)), C.c_uint8(int(mods)))
+
     # Typed event API for better IDE hints and fewer stringly-typed checks
     def next_event_typed(self, timeout_ms: int):
         evt = FfiEvent()
@@ -610,6 +623,32 @@ class Table:
             return
         arr, _keep = _build_lines_spans(headers)
         self._lib.ratatui_table_set_headers_spans(self._handle, arr, len(arr))
+
+    def append_row_spans(self, cells: Sequence[Sequence[tuple[str, "Style"]]]) -> None:
+        if not hasattr(self._lib, 'ratatui_table_append_row_spans'):
+            self.append_row([''.join(text for text, _ in spans) for spans in cells])
+            return
+        arr, _keep = _build_lines_spans(cells)
+        self._lib.ratatui_table_append_row_spans(self._handle, arr, len(arr))
+
+    def append_row_cells_lines(self, row: Sequence[Sequence[Sequence[tuple[str, "Style"]]]]) -> None:
+        if not hasattr(self._lib, 'ratatui_table_append_row_cells_lines'):
+            # degrade to single-line cells by flattening each cell
+            self.append_row([''.join(text for line in cell for text, _ in line) for cell in row])
+            return
+        # Build [FfiCellLines]
+        FfiLineSpans = load_library().FfiLineSpans
+        FfiCellLines = load_library().FfiCellLines
+        cell_arrays = []
+        keep: list[bytes] = []
+        for cell in row:
+            lines_arr, keep2 = _build_lines_spans(cell)
+            cell_arrays.append((lines_arr, keep2))
+            keep.extend(keep2)
+        out = (FfiCellLines * len(row))()
+        for i, (lines_arr, _k) in enumerate(cell_arrays):
+            out[i] = FfiCellLines(lines_arr, len(lines_arr))
+        self._lib.ratatui_table_append_row_cells_lines(self._handle, out, len(out))
 
     def close(self) -> None:
         if getattr(self, "_handle", None):
@@ -1208,6 +1247,62 @@ def headless_render_canvas(width: int, height: int, canvas: Canvas) -> str:
     def __exit__(self, exc_type, exc, tb) -> None:
         if exc_type is None:
             self.ok = self._term.draw_frame(self._cmds)
+
+
+# Headless frame helpers
+def headless_render_frame(width: int, height: int, cmds: Sequence[DrawCmd]) -> str:
+    lib = load_library()
+    if not hasattr(lib, 'ratatui_headless_render_frame'):
+        return ""
+    FfiDrawCmd = lib.FfiDrawCmd
+    arr = (FfiDrawCmd * len(cmds))()
+    for i, cmd in enumerate(cmds):
+        arr[i] = FfiDrawCmd(cmd.kind, cmd.handle, cmd.rect)
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_frame(C.c_uint16(width), C.c_uint16(height), arr, len(cmds), C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode('utf-8', errors='replace')
+    finally:
+        lib.ratatui_string_free(out)
+
+
+def headless_render_frame_styles_ex(width: int, height: int, cmds: Sequence[DrawCmd]) -> str:
+    lib = load_library()
+    if not hasattr(lib, 'ratatui_headless_render_frame_styles_ex'):
+        return ""
+    FfiDrawCmd = lib.FfiDrawCmd
+    arr = (FfiDrawCmd * len(cmds))()
+    for i, cmd in enumerate(cmds):
+        arr[i] = FfiDrawCmd(cmd.kind, cmd.handle, cmd.rect)
+    out = C.c_char_p()
+    ok = lib.ratatui_headless_render_frame_styles_ex(C.c_uint16(width), C.c_uint16(height), arr, len(cmds), C.byref(out))
+    if not ok or not out:
+        return ""
+    try:
+        return C.cast(out, C.c_char_p).value.decode('utf-8', errors='replace')
+    finally:
+        lib.ratatui_string_free(out)
+
+
+def headless_render_frame_cells(width: int, height: int, cmds: Sequence[DrawCmd]):
+    lib = load_library()
+    if not hasattr(lib, 'ratatui_headless_render_frame_cells'):
+        return []
+    FfiDrawCmd = lib.FfiDrawCmd
+    arr = (FfiDrawCmd * len(cmds))()
+    for i, cmd in enumerate(cmds):
+        arr[i] = FfiDrawCmd(cmd.kind, cmd.handle, cmd.rect)
+    cap = int(width) * int(height)
+    Cell = lib.FfiCellInfo
+    buf = (Cell * cap)()
+    n = int(lib.ratatui_headless_render_frame_cells(C.c_uint16(width), C.c_uint16(height), arr, len(cmds), buf, cap))
+    out = []
+    for i in range(min(n, cap)):
+        c = buf[i]
+        out.append({"ch": int(c.ch), "fg": int(c.fg), "bg": int(c.bg), "mods": int(c.mods)})
+    return out
 
 
 def _build_spans(spans: Sequence[tuple[str, "Style"]]):

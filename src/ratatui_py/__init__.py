@@ -43,11 +43,14 @@ from .wrappers import (
     headless_render_barchart,
     headless_render_sparkline,
     headless_render_chart,
+    headless_render_frame,
+    headless_render_frame_styles_ex,
+    headless_render_frame_cells,
     headless_render_canvas,
     headless_render_logo,
     headless_render_logo_sized,
 )
-from .layout import margin, split_h, split_v, margin_rect, split_h_rect, split_v_rect
+from .layout import margin, split_h, split_v, margin_rect, split_h_rect, split_v_rect, layout_split_ffi, split_h_ffi, split_v_ffi
 from .util import frame_begin, BackgroundTask, ProcessTask
 from .input import Keymap
 from .types import Mod
@@ -113,6 +116,9 @@ __all__ = [
     "margin",
     "split_h",
     "split_v",
+    "layout_split_ffi",
+    "split_h_ffi",
+    "split_v_ffi",
     "margin_rect",
     "split_h_rect",
     "split_v_rect",

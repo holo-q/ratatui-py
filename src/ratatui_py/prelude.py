@@ -10,6 +10,7 @@ from .wrappers import (
 from .layout import (
     margin, split_h, split_v,
     margin_rect, split_h_rect, split_v_rect,
+    layout_split_ffi, split_h_ffi, split_v_ffi,
 )
 from .types import (
     Rect, Point, Size, RectLike,
