@@ -1,4 +1,4 @@
-# <img src="./logo.webp" alt="ratatui_ffi logo" width="36"/> ratatui-py — Python bindings for Ratatui (Rust TUI)
+# <img src="./logo.webp" alt="ratatui_ffi logo" width="36"/> ratatui-py — Python Terminal UI (TUI) powered by Ratatui in Rust
 
 [![PyPI](https://img.shields.io/pypi/v/ratatui-py.svg)](https://pypi.org/project/ratatui-py/)
 [![Docs](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml)
