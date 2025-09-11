@@ -9,6 +9,9 @@ interfaces (TUIs). Use Ratatui’s performant rendering and widget set
 from Python via `ctypes`, with prebuilt shared libraries bundled for
 Linux, macOS, and Windows.
 
+Preview
+[![Dashboard demo](docs/assets/dashboard.gif)](docs/assets/dashboard.cast)
+
 Key features:
 - Zero-build install: bundles a prebuilt shared library when available
   and falls back to building from source when configured.
@@ -110,6 +113,13 @@ The easiest way to try things out is with `uvx` — it downloads and runs the
 demo entry points in an isolated, ephemeral environment:
 
 ```
+# One‑liner demo hub
+uvx ratatui-py
+
+# Specific demos
+uvx --from ratatui-py ratatui-py-dashboard
+uvx --from ratatui-py ratatui-py-hello
+```
 
 ### Canvas + Logo (extras)
 
@@ -126,13 +136,6 @@ with Terminal() as term:
     term.draw_canvas(cv, (0,0,w,h))
     if h >= 12:
         term.draw_logo((0, h-12, w, 12))
-```
-# One‑liner demo hub
-uvx ratatui-py
-
-# Specific demos
-uvx --from ratatui-py ratatui-py-dashboard
-uvx --from ratatui-py ratatui-py-hello
 ```
 
 Note on first run: if a platform wheel isn’t available, the package falls back to a
