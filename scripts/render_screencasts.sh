@@ -45,6 +45,13 @@ FILTER=("$@")
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
+# Detect agg binary name (asciinema-agg or agg)
+detect_agg() {
+  if have_cmd asciinema-agg; then echo "asciinema-agg"; return 0; fi
+  if have_cmd agg; then echo "agg"; return 0; fi
+  return 1
+}
+
 render_cast_to_gif() {
   local cast="$1" gif="$2" theme="${3:-solarized-dark}" speed="${4:-2}" scale="${5:-2}"
   # Convert v3 header to v2 if needed (some tools only accept v1/v2)
@@ -59,11 +66,20 @@ render_cast_to_gif() {
     fi
     cast="$tmp_cast"
   fi
-  if have_cmd asciinema-agg; then
-    local fps=$((30 * speed))
-    echo "[cast->gif] asciinema-agg: $cast -> $gif (fps=$fps)"
+  local AGG_BIN
+  AGG_BIN=$(detect_agg || true)
+  if [ -n "$AGG_BIN" ]; then
+    # Map inputs: use speed as --speed, choose theme when supported, rely on default cols/rows from cast
+    echo "[cast->gif] $AGG_BIN: $cast -> $gif (speed=$speed theme=$theme)"
     if [ "$DRY_RUN" -eq 0 ]; then
-      asciinema-agg --fps "$fps" --idle 2 "$cast" "$gif"
+      if [ "$AGG_BIN" = "asciinema-agg" ]; then
+        # asciinema-agg (older CLI): --fps approximates speed*30
+        local fps=$((30 * speed))
+        "$AGG_BIN" --fps "$fps" --idle 2 "$cast" "$gif"
+      else
+        # agg v1.5.0 CLI: supports --speed and --theme
+        "$AGG_BIN" --speed "$speed" --theme "$theme" "$cast" "$gif"
+      fi
     fi
   elif have_cmd asciicast2gif; then
     # asciicast2gif depends on PhantomJS; ensure it's available
