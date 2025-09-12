@@ -133,9 +133,16 @@ with Terminal() as term:
 
 ## Snapshots
 
-See a grid of screencast snapshots (GIFs linked to MP4s):
+<!-- BEGIN: SNAPSHOTS -->
 
-- docs/snapshots.md
+# Screencast Snapshots
+A grid of latest screencasts rendered from the casts in docs/assets.
+
+<table><tr><td><a href="docs/assets/dashboard.mp4"><img src="docs/assets/dashboard.gif" alt="dashboard" width="320"/></a></td></tr>
+<tr><td align="center"><code>dashboard</code></td></tr></table>
+
+
+<!-- END: SNAPSHOTS -->
 
 ### Advanced installation and bundling
 
