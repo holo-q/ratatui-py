@@ -131,6 +131,12 @@ with Terminal() as term:
         term.draw_logo((0, h-12, w, 12))
 ```
 
+## Snapshots
+
+See a grid of screencast snapshots (GIFs linked to MP4s):
+
+- docs/snapshots.md
+
 ### Advanced installation and bundling
 
 If you need precise control over the bundled Rust library, you can direct how
