@@ -54,8 +54,8 @@ detect_agg() {
 
 render_cast_to_gif() {
   local cast="$1" gif="$2" theme="${3:-solarized-dark}" speed="${4:-2}" scale="${5:-2}"
-  # Convert v3 header to v2 if needed (some tools only accept v1/v2)
-  local header
+  # Convert v3 header to v2 if needed (some tools only accept v1/v2) and extract size
+  local header cols rows
   header=$(head -n1 "$cast" || true)
   if [[ "$header" == "{"*"\"version\"":3* ]]; then
     local tmp_cast
@@ -66,19 +66,32 @@ render_cast_to_gif() {
     fi
     cast="$tmp_cast"
   fi
+  # read size from current cast (v2 header now guaranteed)
+  read cols rows < <(python3 - <<'PY' "$cast"
+import json,sys
+with open(sys.argv[1],'r',encoding='utf-8') as f:
+    try:
+        hdr=json.loads(f.readline())
+    except Exception:
+        hdr={}
+cols = hdr.get('width') or (hdr.get('term') or {}).get('cols') or 100
+rows = hdr.get('height') or (hdr.get('term') or {}).get('rows') or 30
+print(cols, rows)
+PY
+)
   local AGG_BIN
   AGG_BIN=$(detect_agg || true)
   if [ -n "$AGG_BIN" ]; then
     # Map inputs: use speed as --speed, choose theme when supported, rely on default cols/rows from cast
-    echo "[cast->gif] $AGG_BIN: $cast -> $gif (speed=$speed theme=$theme)"
+    echo "[cast->gif] $AGG_BIN: $cast -> $gif (speed=$speed theme=$theme cols=$cols rows=$rows)"
     if [ "$DRY_RUN" -eq 0 ]; then
       if [ "$AGG_BIN" = "asciinema-agg" ]; then
         # asciinema-agg (older CLI): --fps approximates speed*30
         local fps=$((30 * speed))
-        "$AGG_BIN" --fps "$fps" --idle 2 "$cast" "$gif"
+        "$AGG_BIN" --fps "$fps" --idle 2 --cols "$cols" --rows "$rows" "$cast" "$gif"
       else
         # agg v1.5.0 CLI: supports --speed and --theme
-        "$AGG_BIN" --speed "$speed" --theme "$theme" "$cast" "$gif"
+        "$AGG_BIN" --speed "$speed" --theme "$theme" --cols "$cols" --rows "$rows" "$cast" "$gif"
       fi
     fi
   elif have_cmd asciicast2gif; then
