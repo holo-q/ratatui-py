@@ -1,42 +1,40 @@
-name: Render screencasts (GIF/MP4 + grid)
+name: Render snapshots (grid only)
 
 on:
   push:
     branches: [ main, master ]
     paths:
-      - 'docs/assets/*.cast'
+      - 'src/**'
+      - 'scripts/generate_text_snapshots.py'
+      - '.github/workflows/render-gif.yml'
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 jobs:
-  cast_to_gif:
+  snapshots:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust + tools
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install package
+        env:
+          RATATUI_FFI_AUTO_BUILD: 1
+          RATATUI_FFI_TAG: v0.2.0
         run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          "$HOME/.cargo/bin/cargo" install agg --locked
-
-      - name: Render screencasts from index (GIF/MP4)
-        run: |
-          bash scripts/render_screencasts.sh -f
-
+          python -m pip install -U pip
+          pip install -e .
       - name: Generate snapshots grid
         run: |
-          python3 scripts/generate_snapshot_grid.py scripts/screencasts.tsv docs/snapshots.md
-
-      - name: Commit rendered assets and grid if changed
+          python3 scripts/generate_text_snapshots.py docs/snapshots.md README.md
+      - name: Commit snapshots if changed
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "docs: update screencast GIF/MP4 and snapshots grid"
+          commit_message: "docs: update snapshots grid"
           file_pattern: |
-            docs/assets/*.gif
-            docs/assets/*.mp4
             docs/snapshots.md
+            README.md

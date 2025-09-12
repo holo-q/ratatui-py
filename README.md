@@ -9,7 +9,7 @@ interfaces (TUIs). Use Ratatui’s performant rendering and widget set
 from Python via `ctypes`, with prebuilt shared libraries bundled for
 Linux, macOS, and Windows.
 
-[![Dashboard demo](docs/assets/dashboard.gif)](docs/assets/dashboard.mp4)
+<!-- Preview removed: using CI-rendered text snapshots instead -->
 
 Key features:
 - Zero-build install: bundles a prebuilt shared library when available
