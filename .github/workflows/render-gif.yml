@@ -21,20 +21,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install package
+      - name: Install package and deps
         env:
           RATATUI_FFI_AUTO_BUILD: 1
           RATATUI_FFI_TAG: v0.2.0
         run: |
           python -m pip install -U pip
           pip install -e .
-      - name: Generate snapshots grid
+          pip install pillow
+      - name: Generate image snapshots and grid
         run: |
-          python3 scripts/generate_text_snapshots.py docs/snapshots.md README.md
+          python3 scripts/generate_image_snapshots.py docs/snapshots.md README.md
       - name: Commit snapshots if changed
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "docs: update snapshots grid"
+          commit_message: "docs: update image snapshots grid"
           file_pattern: |
             docs/snapshots.md
             README.md
+            docs/assets/snapshots/*.png
