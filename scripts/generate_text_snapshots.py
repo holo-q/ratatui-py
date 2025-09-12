@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
 TEMPLATE_BEGIN = "<!-- BEGIN: SNAPSHOTS -->"
 TEMPLATE_END = "<!-- END: SNAPSHOTS -->"
@@ -48,7 +49,7 @@ def escape_html(s: str) -> str:
 
 
 def generate_snapshots_md() -> str:
-    md = ["# Screencast Snapshots\n", "A grid of text snapshots rendered in CI.\n\n"]
+    md = ["# UI Snapshots\n", "A grid of text snapshots rendered in CI.\n\n"]
     md.append(render_widgets_section())
     return "".join(md)
 
@@ -76,4 +77,3 @@ def main(argv):
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv))
-

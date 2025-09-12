@@ -134,11 +134,24 @@ with Terminal() as term:
 
 <!-- BEGIN: SNAPSHOTS -->
 
-# Screencast Snapshots
-A grid of latest screencasts rendered from the casts in docs/assets.
+# UI Snapshots
+A grid of text snapshots rendered in CI.
 
-<table><tr><td><a href="docs/assets/dashboard.mp4"><img src="docs/assets/dashboard.gif" alt="dashboard" width="320"/></a></td></tr>
-<tr><td align="center"><code>dashboard</code></td></tr></table>
+<table><tr><td><pre><code>Item 1                        
+Item 2                        
+Item 3                        
+Item 4                        
+Item 5                        
+                              
+                              </code></pre></td><td><pre><code>A         B          C        
+1         2          3        
+                              
+                              
+                              
+                              
+                              </code></pre></td><td><pre><code>█████████████                 
+█████████████42%              
+█████████████                 </code></pre></td></tr><tr><td align="center"><code>List</code></td><td align="center"><code>Table</code></td><td align="center"><code>Gauge</code></td></tr></table>
 
 
 <!-- END: SNAPSHOTS -->

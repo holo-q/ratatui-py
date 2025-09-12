@@ -1,4 +1,4 @@
-# Screencast Snapshots
+# UI Snapshots
 A grid of text snapshots rendered in CI.
 
 <table><tr><td><pre><code>Item 1                        
