@@ -88,10 +88,19 @@ PY
       if [ "$AGG_BIN" = "asciinema-agg" ]; then
         # asciinema-agg (older CLI): --fps approximates speed*30
         local fps=$((30 * speed))
-        "$AGG_BIN" --fps "$fps" --idle 2 --cols "$cols" --rows "$rows" "$cast" "$gif"
+        "$AGG_BIN" --fps "$fps" --idle 0 --cols "$cols" --rows "$rows" "$cast" "$gif"
       else
         # agg v1.5.0 CLI: supports --speed and --theme
-        "$AGG_BIN" --speed "$speed" --theme "$theme" --cols "$cols" --rows "$rows" "$cast" "$gif"
+        "$AGG_BIN" --speed "$speed" --theme "$theme" --cols "$cols" --rows "$rows" --idle-time-limit 0 --fps-cap 60 "$cast" "$gif"
+      fi
+    fi
+    # Fallback: if GIF frames are suspiciously low, try asciicast2gif if available
+    local fc
+    fc=$(gif_frame_count "$gif") || fc=0
+    if [ "$DRY_RUN" -eq 0 ] && [ -n "$fc" ] && [ "$fc" -lt 10 ] && have_cmd asciicast2gif; then
+      if have_cmd phantomjs || [ -n "${PHANTOMJS_BIN:-}" ]; then
+        echo "[cast->gif] fallback to asciicast2gif (agg produced $fc frames)"
+        asciicast2gif -t "$theme" -S "$speed" -s "$scale" "$cast" "$gif" || true
       fi
     fi
   elif have_cmd asciicast2gif; then
@@ -170,6 +179,12 @@ while IFS=$'\t' read -r cast gif mp4 theme speed scale rest; do
 
   # Render MP4
   if [ -n "${mp4:-}" ]; then
+# Count frames in an animated GIF using ffprobe
+gif_frame_count() {
+  local gif="$1"
+  if ! have_cmd ffprobe; then echo 0; return 0; fi
+  ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 "$gif" 2>/dev/null || echo 0
+}
     if should_render "$gif" "$mp4"; then
       gif_to_mp4 "$gif" "$mp4" || rc=$?
     else
