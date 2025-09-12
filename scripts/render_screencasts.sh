@@ -106,7 +106,7 @@ gif_to_mp4() {
   echo "[gif->mp4] ffmpeg: $gif -> $mp4"
   if [ "$DRY_RUN" -eq 0 ]; then
     ffmpeg -y -i "$gif" -movflags +faststart -pix_fmt yuv420p \
-      -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" "$mp4" </dev/null >/dev/null 2>&1 || {
+      -vf "fps=30,scale=trunc(iw/2)*2:trunc(ih/2)*2" -r 30 "$mp4" </dev/null >/dev/null 2>&1 || {
         echo "ffmpeg failed (see above output)." >&2; return 1; }
   fi
 }
