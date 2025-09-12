@@ -9,7 +9,6 @@ interfaces (TUIs). Use Ratatui’s performant rendering and widget set
 from Python via `ctypes`, with prebuilt shared libraries bundled for
 Linux, macOS, and Windows.
 
-
 [![Dashboard demo](docs/assets/dashboard.gif)](docs/assets/dashboard.mp4)
 
 Key features:
@@ -455,8 +454,3 @@ MIT — see [LICENSE](./LICENSE).
 
 [ratatui_ffi]: https://github.com/holo-q/ratatui-ffi
 [Ratatui]: https://github.com/ratatui-org/ratatui
-Demo preview
-
-![Dashboard demo](docs/assets/dashboard.gif)
-
-[View asciinema cast](docs/assets/dashboard.cast)
