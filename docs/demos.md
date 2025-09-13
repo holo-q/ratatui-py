@@ -7,13 +7,15 @@ preview image is displayed to keep strict builds happy.
 The package installs several demo entrypoints. Run them from your shell:
 
 ```bash
-ratatui-py-demos
+ratatui-demos
 # or run specific ones
-ratatui-py-hello
-ratatui-py-widgets
-ratatui-py-life
-ratatui-py-dashboard
+ratatui-hello
+ratatui-widgets
+ratatui-life
+ratatui-dashboard
 ```
+
+Legacy aliases `ratatui-py-*` are kept for compatibility.
 
 If you see errors about missing libraries, set `RATATUI_FFI_LIB` to a prebuilt
 shared library, or install Rust toolchain and let bundling build from source.

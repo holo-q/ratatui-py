@@ -1,13 +1,13 @@
 # Recording the Dashboard Demo
 
-This shows how to record the `ratatui-py-dashboard` demo and generate an embeddable GIF/SVG for the README and docs.
+This shows how to record the `ratatui-dashboard` demo and generate an embeddable GIF/SVG for the README and docs.
 
 ## Option A: Asciinema + GIF (Docker)
 
 1) Record a cast:
 
 ```
-asciinema rec demo.cast -c "ratatui-py-dashboard"
+asciinema rec demo.cast -c "ratatui-dashboard"
 ```
 
 2) Convert to GIF
@@ -43,7 +43,7 @@ ffmpeg -y -i docs/assets/dashboard.gif -movflags +faststart -pix_fmt yuv420p \
 1) Record a cast:
 
 ```
-asciinema rec demo.cast -c "ratatui-py-dashboard"
+asciinema rec demo.cast -c "ratatui-dashboard"
 ```
 
 2) Convert to SVG via svg-term (Node.js required):

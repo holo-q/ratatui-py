@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ratatui-py"
+name = "ratatui"
 version = "0.4.1"
 description = "Python bindings for ratatui_ffi (Ratatui C ABI) via ctypes"
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -43,6 +43,13 @@ ratatui-py-life = "ratatui_py.examples:life_main"
 ratatui-py-demos = "ratatui_py.demo_runner:run_demo_hub"
 ratatui-py-dashboard = "ratatui_py.demo_runner:run_dashboard"
 ratatui-py = "ratatui_py.demo_runner:run_demo_hub"
+# New aliases under the new distribution name
+ratatui = "ratatui_py.demo_runner:run_demo_hub"
+ratatui-hello = "ratatui_py.examples:hello_main"
+ratatui-widgets = "ratatui_py.examples:widgets_main"
+ratatui-life = "ratatui_py.examples:life_main"
+ratatui-demos = "ratatui_py.demo_runner:run_demo_hub"
+ratatui-dashboard = "ratatui_py.demo_runner:run_dashboard"
 ratatui-ffi-audit-ts = "ratatui_py.tools.ffi_coverage_ts:main"
 ratatui-ffi-audit-py = "ratatui_py.tools.ffi_coverage_py:main"
 
@@ -59,7 +66,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["ratatui_py*"]
+include = ["ratatui_py*", "ratatui*"]
 exclude = ["tests*"]
 
 [tool.setuptools.package-data]

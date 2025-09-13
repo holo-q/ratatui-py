@@ -1,6 +1,6 @@
-# <img src="./logo.webp" alt="ratatui_ffi logo" width="36"/> ratatui-py — Ratatui bindings for Python Terminal UI (TUI) 
+# <img src="./logo.webp" alt="ratatui_ffi logo" width="36"/> ratatui — Ratatui bindings for Python Terminal UI (TUI)
 
-[![PyPI](https://img.shields.io/pypi/v/ratatui-py.svg)](https://pypi.org/project/ratatui-py/)
+[![PyPI](https://img.shields.io/pypi/v/ratatui.svg)](https://pypi.org/project/ratatui/)
 [![Docs](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml/badge.svg)](https://github.com/holo-q/ratatui-py/actions/workflows/docs.yml)
 
 Fast, zero-build Python bindings for [ratatui_ffi], the C ABI for
@@ -24,13 +24,13 @@ Key features:
 Use uv for a fast, reproducible install:
 
 ```
-uv add ratatui-py
+uv add ratatui
 ```
 
 Try the interactive demos without installing into your environment:
 
 ```
-uvx ratatui-py
+uvx ratatui
 ```
 
 Note on first run: if a platform wheel isn’t available, the package falls back to a
@@ -38,7 +38,7 @@ local build (when Rust is installed) to fetch and compile the `ratatui_ffi` cdyl
 This is automatic and cached; disable with `RATATUI_FFI_AUTO_BUILD=0`.
 
 If you’ve already installed the package, the same commands are available on
-your PATH (e.g., `ratatui-py-demos`).
+your PATH (e.g., `ratatui-demos`). Legacy `ratatui-py-*` aliases still work.
 
 ## Quick start
 
@@ -61,7 +61,7 @@ from ratatui_py import App, Terminal, Paragraph
 
 def render(term: Terminal, state: dict) -> None:
     w, h = term.size()
-    p = Paragraph.from_text("Hello ratatui-py!\nPress q to quit.")
+    p = Paragraph.from_text("Hello ratatui!\nPress q to quit.")
     p.set_block_title("Demo", True)
     term.draw_paragraph(p, (0, 0, w, h))
 
@@ -283,12 +283,12 @@ Quick start with asciinema (no shell prompt in the cast):
 ```
 # Record the dashboard only (80x24), smooth and flicker‑free
 asciinema rec -q --cols 80 --rows 24 --idle-time-limit 2 \
-  -c 'RATATUI_PY_RECORDING=1 RATATUI_PY_FPS=60 uv run ratatui-py-dashboard' \
+  -c 'RATATUI_PY_RECORDING=1 RATATUI_PY_FPS=60 uv run ratatui-dashboard' \
   docs/assets/dashboard.cast --overwrite
 
 # Or record the demo hub (hide code pane for minimal churn)
 asciinema rec -q --cols 80 --rows 24 --idle-time-limit 2 \
-  -c 'RATATUI_PY_RECORDING=1 RATATUI_PY_NO_CODE=1 RATATUI_PY_FPS=60 uv run ratatui-py-demos' \
+  -c 'RATATUI_PY_RECORDING=1 RATATUI_PY_NO_CODE=1 RATATUI_PY_FPS=60 uv run ratatui-demos' \
   docs/assets/demos.cast --overwrite
 ```
 
@@ -354,7 +354,7 @@ Turn on robust diagnostics only when needed:
 
 ```bash
 # rich diagnostics without alt screen
-RATATUI_PY_DEBUG=1 uv run ratatui-py-demos
+RATATUI_PY_DEBUG=1 uv run ratatui-demos
 
 # or enable flags individually
 RUST_BACKTRACE=full \
@@ -362,7 +362,7 @@ RATATUI_FFI_TRACE=1 \
 RATATUI_FFI_NO_ALTSCR=1 \
 RATATUI_FFI_PROFILE=debug \
 RATATUI_FFI_LOG=ratatui_ffi.log \
-uv run ratatui-py-demos
+uv run ratatui-demos
 ```
 
 What these do:
@@ -396,7 +396,7 @@ If you still hit rendering anomalies or crashes, please open an issue with:
 - `ratatui_ffi.log` and the console backtrace (if any).
 - A minimal script to reproduce.
 
-## Why ratatui-py?
+## Why ratatui?
 
 Build rich, fast TUIs in Python without giving up a modern rendering engine.
 
@@ -444,7 +444,7 @@ When to pick which (rules of thumb)
   on line editing/REPL flows, or prefer fully dynamic patch‑and‑reload cycles.
 
 ## Links
-- PyPI: https://pypi.org/project/ratatui-py/
+- PyPI: https://pypi.org/project/ratatui/
 - Source: https://github.com/holo-q/ratatui-py
 - Ratatui (Rust): https://github.com/ratatui-org/ratatui
 - ratatui_ffi: https://github.com/holo-q/ratatui-ffi

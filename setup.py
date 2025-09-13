@@ -113,7 +113,6 @@ else:
 
 if __name__ == "__main__":
     setup(
-        name="ratatui-py",
         cmdclass={k: v for k, v in {"build_py": build_py, "develop": develop, "bdist_wheel": bdist_wheel}.items() if v is not None},
         distclass=BinaryDistribution,
         package_data={"ratatui_py": ["_bundled/*", "py.typed"]},

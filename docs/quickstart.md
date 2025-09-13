@@ -3,8 +3,8 @@
 Install from PyPI and run the demo hub:
 
 ```bash
-pip install ratatui-py
-ratatui-py-demos
+pip install ratatui
+ratatui-demos
 ```
 
 Minimal program:
@@ -13,7 +13,7 @@ Minimal program:
 from ratatui_py import Terminal, Paragraph
 
 with Terminal() as term:
-    p = Paragraph.from_text("Hello ratatui-py!\nPress any key to exit.")
+    p = Paragraph.from_text("Hello ratatui!\nPress any key to exit.")
     p.set_block_title("Demo", True)
     term.draw_paragraph(p)
     term.next_event(5000)

@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here.
 
+## 0.4.1
+- New distribution on PyPI: `ratatui` (GitHub repo remains `ratatui-py`).
+- Console scripts now prefer `ratatui-*` names; legacy `ratatui-py-*` kept.
+- Update docs/readme to advertise `uvx ratatui`.
+
 ## 0.4.0
 - Update bundled ratatui_ffi to v0.2.0
 - 100% Python→FFI symbol coverage (guarded by feature detection)
