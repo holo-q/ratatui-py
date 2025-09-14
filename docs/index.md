@@ -1,4 +1,4 @@
-# ratatui-py
+# ratatui
 
 Fast Python bindings for [Ratatui], the modern Rust TUI library. Build rich terminal UIs with Python while leveraging Ratatui’s performance and widgets.
 

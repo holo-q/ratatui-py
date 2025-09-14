@@ -1,4 +1,4 @@
-site_name: ratatui-py
+site_name: ratatui
 site_description: Python bindings for Ratatui (Rust TUI)
 site_url: https://holo-q.github.io/ratatui-py/
 repo_url: https://github.com/holo-q/ratatui-py

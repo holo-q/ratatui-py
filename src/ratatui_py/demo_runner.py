@@ -292,7 +292,7 @@ class DashboardDemo(DemoBase):
         tabs = Tabs()
         tabs.set_titles(self.tabs)
         tabs.set_selected(self.tab_idx)
-        tabs.set_block_title("ratatui-py Dashboard (a/d tabs, j/k move, r spike, q quit)", True)
+        tabs.set_block_title("ratatui Dashboard (a/d tabs, j/k move, r spike, q quit)", True)
         term.draw_tabs(tabs, header)
 
         # main: left list, right chart
@@ -345,7 +345,7 @@ class DashboardDemo(DemoBase):
         tabs = Tabs()
         tabs.set_titles(self.tabs)
         tabs.set_selected(self.tab_idx)
-        tabs.set_block_title("ratatui-py Dashboard (a/d tabs, j/k move, r spike, q quit)", True)
+        tabs.set_block_title("ratatui Dashboard (a/d tabs, j/k move, r spike, q quit)", True)
         out.append(DrawCmd.tabs(tabs, header))
         left, right = split_v(main, 0.38, 0.62, gap=1)
         lst = UiList()
@@ -512,7 +512,7 @@ def run_demo_hub() -> None:
                         if tw > 0:
                             ptitle.append_span(text, style)
                             cur_w += tw
-                    title = " ratatui-py demo "
+                    title = " ratatui demo "
                     add_t(title, Style(fg=title_fg, bg=title_bg))
                     if cur_w < max_w:
                         add_t(" " * (max_w - cur_w), Style(bg=title_bg))
@@ -1196,7 +1196,7 @@ class ChatDemo(DemoBase):
     source_obj = None
 
     def __init__(self) -> None:
-        self.msgs: list[str] = ["Welcome to ratatui-py chat! (Enter sends, q quits)"]
+        self.msgs: list[str] = ["Welcome to ratatui chat! (Enter sends, q quits)"]
         self.input = ""
 
     def on_key(self, evt: dict) -> None:
