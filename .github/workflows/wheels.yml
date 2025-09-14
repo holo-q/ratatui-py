@@ -89,8 +89,17 @@ jobs:
       - name: Switch project name to ratatui-py
         run: |
           set -euo pipefail
-          sed -i 's/^name = \"ratatui\"/name = \"ratatui-py\"/' pyproject.toml
-          echo "Updated project name:" && rg -n "^name = \"" pyproject.toml
+          python - << 'PY'
+from pathlib import Path
+p = Path('pyproject.toml')
+s = p.read_text()
+if 'name = "ratatui"' not in s:
+    raise SystemExit('expected project name not found')
+s = s.replace('name = "ratatui"', 'name = "ratatui-py"', 1)
+p.write_text(s)
+print('Updated project name to ratatui-py')
+PY
+          grep -n '^name = ' pyproject.toml || true
       - name: Build sdist
         run: |
           python -m pip install -U pip build
