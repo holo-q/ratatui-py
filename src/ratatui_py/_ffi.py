@@ -1,4 +1,4 @@
-# GENERATED from bindings.json by tools/gen_ffi.py — DO NOT EDIT. Regenerate with `just gen`. ffi=0.2.6 ratatui=0.29
+# GENERATED from bindings.json by tools/gen_ffi.py — DO NOT EDIT. Regenerate with `just gen`. ffi=0.2.6 ratatui=0.30
 
 import os
 import sys
@@ -426,6 +426,11 @@ FFI_MARKER = {
     "HalfBlock": 4,
 }
 
+FFI_MASCOT_EYE = {
+    "Default": 0,
+    "Red": 1,
+}
+
 FFI_MOUSE_BUTTON = {
     "Left": 1,
     "Right": 2,
@@ -634,7 +639,7 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
 
 
 def _bind_prototypes(lib: C.CDLL) -> None:
-    # All 349 exports — argtypes/restype per the FFI ABI manifest.
+    # All 350 exports — argtypes/restype per the FFI ABI manifest.
     lib.ratatui_bar_get_nine_levels.argtypes = []
     lib.ratatui_bar_get_nine_levels.restype = FfiSymbolsBarSet
     lib.ratatui_bar_get_three_levels.argtypes = []
@@ -717,8 +722,6 @@ def _bind_prototypes(lib: C.CDLL) -> None:
     lib.ratatui_border_get_rounded.restype = FfiSymbolsBorderSet
     lib.ratatui_border_get_thick.argtypes = []
     lib.ratatui_border_get_thick.restype = FfiSymbolsBorderSet
-    lib.ratatui_braille_get_blank.argtypes = []
-    lib.ratatui_braille_get_blank.restype = C.c_uint16
     lib.ratatui_canvas_add_line.argtypes = [C.c_void_p, C.c_double, C.c_double, C.c_double, C.c_double, FfiStyle]
     lib.ratatui_canvas_add_points.argtypes = [C.c_void_p, C.c_void_p, C.c_size_t, FfiStyle, C.c_uint32]
     lib.ratatui_canvas_add_rect.argtypes = [C.c_void_p, C.c_double, C.c_double, C.c_double, C.c_double, FfiStyle, C.c_bool]
@@ -807,6 +810,8 @@ def _bind_prototypes(lib: C.CDLL) -> None:
     lib.ratatui_headless_render_ratatuilogo.restype = C.c_bool
     lib.ratatui_headless_render_ratatuilogo_sized.argtypes = [C.c_uint16, C.c_uint16, C.c_uint32, C.c_void_p]
     lib.ratatui_headless_render_ratatuilogo_sized.restype = C.c_bool
+    lib.ratatui_headless_render_ratatuimascot.argtypes = [C.c_uint16, C.c_uint16, C.c_uint32, C.c_void_p]
+    lib.ratatui_headless_render_ratatuimascot.restype = C.c_bool
     lib.ratatui_headless_render_scrollbar.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.c_void_p]
     lib.ratatui_headless_render_scrollbar.restype = C.c_bool
     lib.ratatui_headless_render_sparkline.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.c_void_p]
@@ -1057,6 +1062,8 @@ def _bind_prototypes(lib: C.CDLL) -> None:
     lib.ratatui_ratatuilogo_draw_in.restype = C.c_bool
     lib.ratatui_ratatuilogo_draw_sized_in.argtypes = [C.c_void_p, FfiRect, C.c_uint32]
     lib.ratatui_ratatuilogo_draw_sized_in.restype = C.c_bool
+    lib.ratatui_ratatuimascot_draw_in.argtypes = [C.c_void_p, FfiRect, C.c_uint32]
+    lib.ratatui_ratatuimascot_draw_in.restype = C.c_bool
     lib.ratatui_scrollbar_configure.argtypes = [C.c_void_p, C.c_uint32, C.c_uint16, C.c_uint16, C.c_uint16]
     lib.ratatui_scrollbar_free.argtypes = [C.c_void_p]
     lib.ratatui_scrollbar_get_double_horizontal.argtypes = []
