@@ -124,9 +124,11 @@ class Paragraph:
             self._lib.ratatui_paragraph_set_wrap(self._handle, bool(trim))
         return self
 
-    def set_scroll(self, offset: int) -> "Paragraph":
+    def set_scroll(self, offset: int, x: int = 0) -> "Paragraph":
+        # ratatui-ffi 0.2.x takes (x, y); `offset` is the vertical (y) scroll
+        # for back-compat with the prior single-arg signature.
         if hasattr(self._lib, 'ratatui_paragraph_set_scroll'):
-            self._lib.ratatui_paragraph_set_scroll(self._handle, C.c_uint16(int(offset)))
+            self._lib.ratatui_paragraph_set_scroll(self._handle, C.c_uint16(int(x)), C.c_uint16(int(offset)))
         return self
 
     def reserve_lines(self, n: int) -> "Paragraph":
@@ -188,26 +190,29 @@ class Terminal:
     def clear(self) -> None:
         self._lib.ratatui_terminal_clear(self._handle)
 
-    # Raw/alt/cursor/viewport controls (present in v0.2.0+)
+    # Raw/alt/cursor/viewport controls. As of ratatui-ffi 0.2.x these are
+    # terminal-scoped: each takes the terminal handle and returns a bool ok flag
+    # (older FFIs had process-global no-arg variants — the regenerated _ffi.py
+    # binds the real handle-taking ABI, so the handle must be threaded here).
     def enable_raw(self) -> None:
         if hasattr(self._lib, 'ratatui_terminal_enable_raw'):
-            self._lib.ratatui_terminal_enable_raw()
+            self._lib.ratatui_terminal_enable_raw(self._handle)
 
     def disable_raw(self) -> None:
         if hasattr(self._lib, 'ratatui_terminal_disable_raw'):
-            self._lib.ratatui_terminal_disable_raw()
+            self._lib.ratatui_terminal_disable_raw(self._handle)
 
     def enter_alt(self) -> None:
         if hasattr(self._lib, 'ratatui_terminal_enter_alt'):
-            self._lib.ratatui_terminal_enter_alt()
+            self._lib.ratatui_terminal_enter_alt(self._handle)
 
     def leave_alt(self) -> None:
         if hasattr(self._lib, 'ratatui_terminal_leave_alt'):
-            self._lib.ratatui_terminal_leave_alt()
+            self._lib.ratatui_terminal_leave_alt(self._handle)
 
-    def show_cursor(self) -> None:
+    def show_cursor(self, show: bool = True) -> None:
         if hasattr(self._lib, 'ratatui_terminal_show_cursor'):
-            self._lib.ratatui_terminal_show_cursor()
+            self._lib.ratatui_terminal_show_cursor(self._handle, bool(show))
 
     def draw_paragraph(self, p: Paragraph, rect: Optional[RectLike] = None) -> bool:
         if rect is None:
@@ -295,7 +300,7 @@ class Terminal:
             raise RuntimeError('cursor position not supported by FFI build')
         x = C.c_uint16(0)
         y = C.c_uint16(0)
-        ok = self._lib.ratatui_terminal_get_cursor_position(C.byref(x), C.byref(y))
+        ok = self._lib.ratatui_terminal_get_cursor_position(self._handle, C.byref(x), C.byref(y))
         if not ok:
             raise RuntimeError('ratatui_terminal_get_cursor_position failed')
         return (int(x.value), int(y.value))
@@ -303,13 +308,13 @@ class Terminal:
     def set_cursor_position(self, x: int, y: int) -> None:
         if not hasattr(self._lib, 'ratatui_terminal_set_cursor_position'):
             raise RuntimeError('set cursor position not supported by FFI build')
-        self._lib.ratatui_terminal_set_cursor_position(C.c_uint16(int(x)), C.c_uint16(int(y)))
+        self._lib.ratatui_terminal_set_cursor_position(self._handle, C.c_uint16(int(x)), C.c_uint16(int(y)))
 
     def get_viewport_area(self) -> Tuple[int, int, int, int]:
         if not hasattr(self._lib, 'ratatui_terminal_get_viewport_area'):
             raise RuntimeError('viewport area not supported by FFI build')
         r = FfiRect(0, 0, 0, 0)
-        ok = self._lib.ratatui_terminal_get_viewport_area(C.byref(r))
+        ok = self._lib.ratatui_terminal_get_viewport_area(self._handle, C.byref(r))
         if not ok:
             raise RuntimeError('ratatui_terminal_get_viewport_area failed')
         return (int(r.x), int(r.y), int(r.width), int(r.height))
@@ -318,7 +323,7 @@ class Terminal:
         if not hasattr(self._lib, 'ratatui_terminal_set_viewport_area'):
             raise RuntimeError('set viewport area not supported by FFI build')
         r = _ffi_rect(rect)
-        self._lib.ratatui_terminal_set_viewport_area(r)
+        self._lib.ratatui_terminal_set_viewport_area(self._handle, r)
 
     def next_event(self, timeout_ms: int) -> Optional[dict]:
         evt = FfiEvent()
@@ -592,12 +597,16 @@ class Table:
         s = None if sym is None else sym.encode("utf-8")
         self._lib.ratatui_table_set_highlight_symbol(self._handle, s)
 
-    # Advanced table configuration (v0.2.0+)
+    # Advanced table configuration. ratatui-ffi 0.2.x widened set_widths to a
+    # parallel (kinds, vals) form: kinds is a u32 constraint-kind per column
+    # (FFI_CONSTRAINT_KIND: Length=0, Percentage=1, Min=2), vals the magnitude.
+    # The historical single-list set_widths meant Length constraints -> kind 0.
     def set_widths(self, widths: Iterable[int]) -> None:
         if hasattr(self._lib, 'ratatui_table_set_widths'):
             vals = list(widths)
+            kinds = (C.c_uint32 * len(vals))(*([0] * len(vals)))  # Length
             arr = (C.c_uint16 * len(vals))(*vals)
-            self._lib.ratatui_table_set_widths(self._handle, arr, len(arr))
+            self._lib.ratatui_table_set_widths(self._handle, kinds, arr, len(arr))
 
     def set_widths_percentages(self, percentages: Iterable[int]) -> None:
         if hasattr(self._lib, 'ratatui_table_set_widths_percentages'):
@@ -1333,21 +1342,29 @@ def _build_lines_spans(lines: Sequence[Sequence[tuple[str, "Style"]]]):
     return out, keep
 
 
-# Terminal context managers for raw and alt modes
+# Terminal context managers for raw and alt modes.
+#
+# NOTE: as of ratatui-ffi 0.2.x, raw/alt-screen toggling is TERMINAL-SCOPED —
+# the FFI fns take a terminal handle. These standalone, handle-less context
+# managers are a vestige of the older process-global FFI and can no longer
+# drive the real ABI. They are kept as no-op-on-absence shims so the public
+# `raw_mode()` / `alt_screen()` names stay importable, but the supported path
+# is `terminal_session(raw=..., alt=...)`, which owns a Terminal and threads
+# its handle through `Terminal.enable_raw()` / `enter_alt()` correctly.
 class _RawMode:
     def __enter__(self):
-        load_library().ratatui_terminal_enable_raw()
+        # No terminal handle available at this scope; superseded by
+        # terminal_session(). Intentionally inert against the handle-scoped ABI.
         return self
     def __exit__(self, exc_type, exc, tb):
-        load_library().ratatui_terminal_disable_raw()
+        return None
 
 
 class _AltScreen:
     def __enter__(self):
-        load_library().ratatui_terminal_enter_alt()
         return self
     def __exit__(self, exc_type, exc, tb):
-        load_library().ratatui_terminal_leave_alt()
+        return None
 
 
 def raw_mode():
@@ -1486,16 +1503,26 @@ def headless_render_list_state(width: int, height: int, lst: List, state: ListSt
         lib.ratatui_string_free(out)
 
 
+# ratatui-ffi 0.2.x reordered the stateful draw args to (term, widget, rect, state).
 def _term_draw_list_state(term: Terminal, lst: List, state: ListState, rect: RectLike) -> bool:
     r = _ffi_rect(rect)
-    return bool(term._lib.ratatui_terminal_draw_list_state_in(term._handle, lst._handle, state._handle, r))
+    return bool(term._lib.ratatui_terminal_draw_list_state_in(term._handle, lst._handle, r, state._handle))
 
 
 def _term_draw_table_state(term: Terminal, tbl: Table, state: TableState, rect: RectLike) -> bool:
     r = _ffi_rect(rect)
-    return bool(term._lib.ratatui_terminal_draw_table_state_in(term._handle, tbl._handle, state._handle, r))
+    return bool(term._lib.ratatui_terminal_draw_table_state_in(term._handle, tbl._handle, r, state._handle))
 
 
 # Attach methods to Terminal without breaking API surface
 setattr(Terminal, 'draw_list_state', lambda self, lst, state, rect: _term_draw_list_state(self, lst, state, rect))
 setattr(Terminal, 'draw_table_state', lambda self, tbl, state, rect: _term_draw_table_state(self, tbl, state, rect))
+
+
+# Stage-2 generated ergonomic wrappers. The generated module imports the hand
+# classes + span builders defined ABOVE, so it must be imported here at the foot
+# of the module (after every class exists) to avoid a circular import. It binds
+# generated methods onto the hand classes only where the name is free — the hand
+# version always wins. See tools/gen_wrappers.py and tools/residue.txt.
+from ._wrappers_generated import apply_generated as _apply_generated, LineGauge  # noqa: E402
+_apply_generated()

@@ -50,6 +50,16 @@ from .wrappers import (
     headless_render_logo,
     headless_render_logo_sized,
 )
+# Stage-2 generated layer: the LineGauge widget (no hand class) and the headless
+# render helpers for the residue widgets (clear/linegauge/scrollbar). The
+# `apply_generated()` binder ran at wrappers.py import; here we surface the
+# new public names.
+from ._wrappers_generated import (
+    LineGauge,
+    headless_render_clear,
+    headless_render_linegauge,
+    headless_render_scrollbar,
+)
 from .layout import margin, split_h, split_v, margin_rect, split_h_rect, split_v_rect, layout_split_ffi, split_h_ffi, split_v_ffi
 from .util import frame_begin, BackgroundTask, ProcessTask
 from .input import Keymap
@@ -113,6 +123,10 @@ __all__ = [
     "headless_render_barchart",
     "headless_render_sparkline",
     "headless_render_chart",
+    "LineGauge",
+    "headless_render_clear",
+    "headless_render_linegauge",
+    "headless_render_scrollbar",
     "margin",
     "split_h",
     "split_v",

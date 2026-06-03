@@ -246,8 +246,8 @@ wheels = [
 ]
 
 [[package]]
-name = "ratatui-py"
-version = "0.4.1"
+name = "ratatui"
+version = "0.4.2"
 source = { editable = "." }
 
 [package.dev-dependencies]

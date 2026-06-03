@@ -1,0 +1,175 @@
+# Parity report: generated (manifest) vs prior hand-written _ffi.py
+# manifest fns: 349   old fns: 208
+
+## added (145) — manifest has, old lacked (drift gap closed)
+ratatui_bar_get_nine_levels
+ratatui_bar_get_three_levels
+ratatui_barchart_set_block_title_spans
+ratatui_barchart_set_labels_spans
+ratatui_block_get_nine_levels
+ratatui_block_get_three_levels
+ratatui_border_get_double
+ratatui_border_get_empty
+ratatui_border_get_full
+ratatui_border_get_one_eighth_bottom_eight
+ratatui_border_get_one_eighth_left_eight
+ratatui_border_get_one_eighth_right_eight
+ratatui_border_get_one_eighth_tall
+ratatui_border_get_one_eighth_top_eight
+ratatui_border_get_one_eighth_wide
+ratatui_border_get_plain
+ratatui_border_get_proportional_tall
+ratatui_border_get_proportional_wide
+ratatui_border_get_quadrant_block
+ratatui_border_get_quadrant_bottom_half
+ratatui_border_get_quadrant_bottom_left
+ratatui_border_get_quadrant_bottom_right
+ratatui_border_get_quadrant_inside
+ratatui_border_get_quadrant_left_half
+ratatui_border_get_quadrant_outside
+ratatui_border_get_quadrant_right_half
+ratatui_border_get_quadrant_top_half
+ratatui_border_get_quadrant_top_left
+ratatui_border_get_quadrant_top_left_bottom_left_bottom_right
+ratatui_border_get_quadrant_top_left_bottom_right
+ratatui_border_get_quadrant_top_left_top_right_bottom_left
+ratatui_border_get_quadrant_top_left_top_right_bottom_right
+ratatui_border_get_quadrant_top_right
+ratatui_border_get_quadrant_top_right_bottom_left
+ratatui_border_get_quadrant_top_right_bottom_left_bottom_right
+ratatui_border_get_rounded
+ratatui_border_get_thick
+ratatui_braille_get_blank
+ratatui_canvas_set_block_title_spans
+ratatui_chart_set_block_title_spans
+ratatui_gauge_set_block_title_spans
+ratatui_half_block_get_full
+ratatui_half_block_get_lower
+ratatui_half_block_get_upper
+ratatui_line_get_bottom_left
+ratatui_line_get_bottom_right
+ratatui_line_get_cross
+ratatui_line_get_double
+ratatui_line_get_double_bottom_left
+ratatui_line_get_double_bottom_right
+ratatui_line_get_double_cross
+ratatui_line_get_double_horizontal
+ratatui_line_get_double_horizontal_down
+ratatui_line_get_double_horizontal_up
+ratatui_line_get_double_top_left
+ratatui_line_get_double_top_right
+ratatui_line_get_double_vertical
+ratatui_line_get_double_vertical_left
+ratatui_line_get_double_vertical_right
+ratatui_line_get_horizontal
+ratatui_line_get_horizontal_down
+ratatui_line_get_horizontal_up
+ratatui_line_get_normal
+ratatui_line_get_rounded
+ratatui_line_get_rounded_bottom_left
+ratatui_line_get_rounded_bottom_right
+ratatui_line_get_rounded_top_left
+ratatui_line_get_rounded_top_right
+ratatui_line_get_thick
+ratatui_line_get_thick_bottom_left
+ratatui_line_get_thick_bottom_right
+ratatui_line_get_thick_cross
+ratatui_line_get_thick_horizontal
+ratatui_line_get_thick_horizontal_down
+ratatui_line_get_thick_horizontal_up
+ratatui_line_get_thick_top_left
+ratatui_line_get_thick_top_right
+ratatui_line_get_thick_vertical
+ratatui_line_get_thick_vertical_left
+ratatui_line_get_thick_vertical_right
+ratatui_line_get_top_left
+ratatui_line_get_top_right
+ratatui_line_get_vertical
+ratatui_line_get_vertical_left
+ratatui_line_get_vertical_right
+ratatui_linegauge_set_block_title_spans
+ratatui_linegauge_set_label_spans
+ratatui_list_set_block_title_spans
+ratatui_palette_material_get_amber
+ratatui_palette_material_get_black
+ratatui_palette_material_get_blue
+ratatui_palette_material_get_blue_gray
+ratatui_palette_material_get_brown
+ratatui_palette_material_get_cyan
+ratatui_palette_material_get_deep_orange
+ratatui_palette_material_get_deep_purple
+ratatui_palette_material_get_gray
+ratatui_palette_material_get_green
+ratatui_palette_material_get_indigo
+ratatui_palette_material_get_light_blue
+ratatui_palette_material_get_light_green
+ratatui_palette_material_get_lime
+ratatui_palette_material_get_orange
+ratatui_palette_material_get_pink
+ratatui_palette_material_get_purple
+ratatui_palette_material_get_red
+ratatui_palette_material_get_teal
+ratatui_palette_material_get_white
+ratatui_palette_material_get_yellow
+ratatui_palette_tailwind_get_amber
+ratatui_palette_tailwind_get_black
+ratatui_palette_tailwind_get_blue
+ratatui_palette_tailwind_get_cyan
+ratatui_palette_tailwind_get_emerald
+ratatui_palette_tailwind_get_fuchsia
+ratatui_palette_tailwind_get_gray
+ratatui_palette_tailwind_get_green
+ratatui_palette_tailwind_get_indigo
+ratatui_palette_tailwind_get_lime
+ratatui_palette_tailwind_get_neutral
+ratatui_palette_tailwind_get_orange
+ratatui_palette_tailwind_get_pink
+ratatui_palette_tailwind_get_purple
+ratatui_palette_tailwind_get_red
+ratatui_palette_tailwind_get_rose
+ratatui_palette_tailwind_get_sky
+ratatui_palette_tailwind_get_slate
+ratatui_palette_tailwind_get_stone
+ratatui_palette_tailwind_get_teal
+ratatui_palette_tailwind_get_violet
+ratatui_palette_tailwind_get_white
+ratatui_palette_tailwind_get_yellow
+ratatui_palette_tailwind_get_zinc
+ratatui_paragraph_set_block_title_spans
+ratatui_scrollbar_get_double_horizontal
+ratatui_scrollbar_get_double_vertical
+ratatui_scrollbar_get_horizontal
+ratatui_scrollbar_get_vertical
+ratatui_scrollbar_set_block_title_spans
+ratatui_sparkline_set_block_title_spans
+ratatui_symbols_get_braille_dots_flat
+ratatui_table_set_block_title_spans
+ratatui_tabs_set_block_title_spans
+ratatui_tabs_set_divider_spans
+ratatui_terminal_draw_cells_in
+
+## removed (4) — old had, manifest lacks (investigate)
+ratatui_barchart_set_block_title_alignment
+ratatui_chart_reserve_datasets
+ratatui_chart_set_block_title_alignment
+ratatui_sparkline_set_block_title_alignment
+
+## changed (18) — argtypes/restype differs (investigate)
+ratatui_layout_split: args old=['C.c_uint16', 'C.c_uint16', 'C.c_uint32', 'PTR', 'PTR', 'PTR', 'C.c_size_t', 'PTR', 'C.c_size_t'] new=['C.c_uint16', 'C.c_uint16', 'C.c_uint32', 'PTR', 'PTR', 'C.c_size_t', 'C.c_uint16', 'C.c_uint16', 'C.c_uint16', 'C.c_uint16', 'PTR', 'C.c_size_t']
+ratatui_layout_split_ex: args old=['C.c_uint16', 'C.c_uint16', 'C.c_uint32', 'PTR', 'PTR', 'PTR', 'C.c_size_t', 'C.c_uint16', 'C.c_uint16', 'C.c_uint16', 'C.c_uint16', 'C.c_uint16', 'PTR', 'C.c_size_t'] new=['C.c_uint16', 'C.c_uint16', 'C.c_uint32', 'PTR', 'PTR', 'C.c_size_t', 'C.c_uint16', 'C.c_uint16', 'C.c_uint16', 'C.c_uint16', 'C.c_uint16', 'PTR', 'C.c_size_t']
+ratatui_list_set_scroll_offset: args old=['PTR', 'C.c_uint16'] new=['PTR', 'C.c_size_t']
+ratatui_list_state_set_offset: args old=['PTR', 'C.c_uint16'] new=['PTR', 'C.c_size_t']
+ratatui_paragraph_set_scroll: args old=['PTR', 'C.c_uint16'] new=['PTR', 'C.c_uint16', 'C.c_uint16']
+ratatui_table_set_widths: args old=['PTR', 'PTR', 'C.c_size_t'] new=['PTR', 'PTR', 'PTR', 'C.c_size_t']
+ratatui_table_state_set_offset: args old=['PTR', 'C.c_uint16'] new=['PTR', 'C.c_size_t']
+ratatui_terminal_disable_raw: args old=[] new=['PTR']; rest old=None new=C.c_bool
+ratatui_terminal_draw_list_state_in: args old=['PTR', 'PTR', 'PTR', 'FfiRect'] new=['PTR', 'PTR', 'FfiRect', 'PTR']
+ratatui_terminal_draw_table_state_in: args old=['PTR', 'PTR', 'PTR', 'FfiRect'] new=['PTR', 'PTR', 'FfiRect', 'PTR']
+ratatui_terminal_enable_raw: args old=[] new=['PTR']; rest old=None new=C.c_bool
+ratatui_terminal_enter_alt: args old=[] new=['PTR']; rest old=None new=C.c_bool
+ratatui_terminal_get_cursor_position: args old=['PTR', 'PTR'] new=['PTR', 'PTR', 'PTR']
+ratatui_terminal_get_viewport_area: args old=['PTR'] new=['PTR', 'PTR']
+ratatui_terminal_leave_alt: args old=[] new=['PTR']; rest old=None new=C.c_bool
+ratatui_terminal_set_cursor_position: args old=['C.c_uint16', 'C.c_uint16'] new=['PTR', 'C.c_uint16', 'C.c_uint16']; rest old=None new=C.c_bool
+ratatui_terminal_set_viewport_area: args old=['FfiRect'] new=['PTR', 'FfiRect']; rest old=None new=C.c_bool
+ratatui_terminal_show_cursor: args old=[] new=['PTR', 'C.c_bool']; rest old=None new=C.c_bool
