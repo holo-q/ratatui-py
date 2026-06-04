@@ -184,32 +184,6 @@ class FfiStr(C.Structure):
         ("len", C.c_size_t),
     ]
 
-class FfiSymbolsBarSet(C.Structure):
-    _fields_ = [
-        ("full", FfiStr),
-        ("seven_eighths", FfiStr),
-        ("three_quarters", FfiStr),
-        ("five_eighths", FfiStr),
-        ("half", FfiStr),
-        ("three_eighths", FfiStr),
-        ("one_quarter", FfiStr),
-        ("one_eighth", FfiStr),
-        ("empty", FfiStr),
-    ]
-
-class FfiSymbolsBlockSet(C.Structure):
-    _fields_ = [
-        ("full", FfiStr),
-        ("seven_eighths", FfiStr),
-        ("three_quarters", FfiStr),
-        ("five_eighths", FfiStr),
-        ("half", FfiStr),
-        ("three_eighths", FfiStr),
-        ("one_quarter", FfiStr),
-        ("one_eighth", FfiStr),
-        ("empty", FfiStr),
-    ]
-
 class FfiSymbolsBorderSet(C.Structure):
     _fields_ = [
         ("top_left", FfiStr),
@@ -235,14 +209,6 @@ class FfiSymbolsLineSet(C.Structure):
         ("horizontal_down", FfiStr),
         ("horizontal_up", FfiStr),
         ("cross", FfiStr),
-    ]
-
-class FfiSymbolsScrollbarSet(C.Structure):
-    _fields_ = [
-        ("track", FfiStr),
-        ("thumb", FfiStr),
-        ("begin", FfiStr),
-        ("end", FfiStr),
     ]
 
 class FfiTabsStyles(C.Structure):
@@ -639,11 +605,23 @@ def load_library(explicit: Optional[str] = None) -> C.CDLL:
 
 
 def _bind_prototypes(lib: C.CDLL) -> None:
-    # All 350 exports — argtypes/restype per the FFI ABI manifest.
-    lib.ratatui_bar_get_nine_levels.argtypes = []
-    lib.ratatui_bar_get_nine_levels.restype = FfiSymbolsBarSet
-    lib.ratatui_bar_get_three_levels.argtypes = []
-    lib.ratatui_bar_get_three_levels.restype = FfiSymbolsBarSet
+    # All 380 exports — argtypes/restype per the FFI ABI manifest.
+    lib.ratatui_bar_get_five_eighths.argtypes = []
+    lib.ratatui_bar_get_five_eighths.restype = FfiStr
+    lib.ratatui_bar_get_full.argtypes = []
+    lib.ratatui_bar_get_full.restype = FfiStr
+    lib.ratatui_bar_get_half.argtypes = []
+    lib.ratatui_bar_get_half.restype = FfiStr
+    lib.ratatui_bar_get_one_eighth.argtypes = []
+    lib.ratatui_bar_get_one_eighth.restype = FfiStr
+    lib.ratatui_bar_get_one_quarter.argtypes = []
+    lib.ratatui_bar_get_one_quarter.restype = FfiStr
+    lib.ratatui_bar_get_seven_eighths.argtypes = []
+    lib.ratatui_bar_get_seven_eighths.restype = FfiStr
+    lib.ratatui_bar_get_three_eighths.argtypes = []
+    lib.ratatui_bar_get_three_eighths.restype = FfiStr
+    lib.ratatui_bar_get_three_quarters.argtypes = []
+    lib.ratatui_bar_get_three_quarters.restype = FfiStr
     lib.ratatui_barchart_free.argtypes = [C.c_void_p]
     lib.ratatui_barchart_new.argtypes = []
     lib.ratatui_barchart_new.restype = C.c_void_p
@@ -656,16 +634,40 @@ def _bind_prototypes(lib: C.CDLL) -> None:
     lib.ratatui_barchart_set_labels_spans.argtypes = [C.c_void_p, C.c_void_p, C.c_size_t]
     lib.ratatui_barchart_set_styles.argtypes = [C.c_void_p, FfiStyle, FfiStyle, FfiStyle]
     lib.ratatui_barchart_set_values.argtypes = [C.c_void_p, C.c_void_p, C.c_size_t]
-    lib.ratatui_block_get_nine_levels.argtypes = []
-    lib.ratatui_block_get_nine_levels.restype = FfiSymbolsBlockSet
-    lib.ratatui_block_get_three_levels.argtypes = []
-    lib.ratatui_block_get_three_levels.restype = FfiSymbolsBlockSet
+    lib.ratatui_block_get_five_eighths.argtypes = []
+    lib.ratatui_block_get_five_eighths.restype = FfiStr
+    lib.ratatui_block_get_full.argtypes = []
+    lib.ratatui_block_get_full.restype = FfiStr
+    lib.ratatui_block_get_half.argtypes = []
+    lib.ratatui_block_get_half.restype = FfiStr
+    lib.ratatui_block_get_one_eighth.argtypes = []
+    lib.ratatui_block_get_one_eighth.restype = FfiStr
+    lib.ratatui_block_get_one_quarter.argtypes = []
+    lib.ratatui_block_get_one_quarter.restype = FfiStr
+    lib.ratatui_block_get_seven_eighths.argtypes = []
+    lib.ratatui_block_get_seven_eighths.restype = FfiStr
+    lib.ratatui_block_get_three_eighths.argtypes = []
+    lib.ratatui_block_get_three_eighths.restype = FfiStr
+    lib.ratatui_block_get_three_quarters.argtypes = []
+    lib.ratatui_block_get_three_quarters.restype = FfiStr
     lib.ratatui_border_get_double.argtypes = []
     lib.ratatui_border_get_double.restype = FfiSymbolsBorderSet
     lib.ratatui_border_get_empty.argtypes = []
     lib.ratatui_border_get_empty.restype = FfiSymbolsBorderSet
     lib.ratatui_border_get_full.argtypes = []
     lib.ratatui_border_get_full.restype = FfiSymbolsBorderSet
+    lib.ratatui_border_get_heavy_double_dashed.argtypes = []
+    lib.ratatui_border_get_heavy_double_dashed.restype = FfiSymbolsBorderSet
+    lib.ratatui_border_get_heavy_quadruple_dashed.argtypes = []
+    lib.ratatui_border_get_heavy_quadruple_dashed.restype = FfiSymbolsBorderSet
+    lib.ratatui_border_get_heavy_triple_dashed.argtypes = []
+    lib.ratatui_border_get_heavy_triple_dashed.restype = FfiSymbolsBorderSet
+    lib.ratatui_border_get_light_double_dashed.argtypes = []
+    lib.ratatui_border_get_light_double_dashed.restype = FfiSymbolsBorderSet
+    lib.ratatui_border_get_light_quadruple_dashed.argtypes = []
+    lib.ratatui_border_get_light_quadruple_dashed.restype = FfiSymbolsBorderSet
+    lib.ratatui_border_get_light_triple_dashed.argtypes = []
+    lib.ratatui_border_get_light_triple_dashed.restype = FfiSymbolsBorderSet
     lib.ratatui_border_get_one_eighth_bottom_eight.argtypes = []
     lib.ratatui_border_get_one_eighth_bottom_eight.restype = FfiStr
     lib.ratatui_border_get_one_eighth_left_eight.argtypes = []
@@ -774,12 +776,6 @@ def _bind_prototypes(lib: C.CDLL) -> None:
     lib.ratatui_gauge_set_label_spans.argtypes = [C.c_void_p, C.c_void_p, C.c_size_t]
     lib.ratatui_gauge_set_ratio.argtypes = [C.c_void_p, C.c_float]
     lib.ratatui_gauge_set_styles.argtypes = [C.c_void_p, FfiStyle, FfiStyle, FfiStyle]
-    lib.ratatui_half_block_get_full.argtypes = []
-    lib.ratatui_half_block_get_full.restype = C.c_uint32
-    lib.ratatui_half_block_get_lower.argtypes = []
-    lib.ratatui_half_block_get_lower.restype = C.c_uint32
-    lib.ratatui_half_block_get_upper.argtypes = []
-    lib.ratatui_half_block_get_upper.restype = C.c_uint32
     lib.ratatui_headless_render_barchart.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.c_void_p]
     lib.ratatui_headless_render_barchart.restype = C.c_bool
     lib.ratatui_headless_render_canvas.argtypes = [C.c_uint16, C.c_uint16, C.c_void_p, C.c_void_p]
@@ -861,12 +857,48 @@ def _bind_prototypes(lib: C.CDLL) -> None:
     lib.ratatui_line_get_double_vertical_left.restype = FfiStr
     lib.ratatui_line_get_double_vertical_right.argtypes = []
     lib.ratatui_line_get_double_vertical_right.restype = FfiStr
+    lib.ratatui_line_get_heavy_double_dash_horizontal.argtypes = []
+    lib.ratatui_line_get_heavy_double_dash_horizontal.restype = FfiStr
+    lib.ratatui_line_get_heavy_double_dash_vertical.argtypes = []
+    lib.ratatui_line_get_heavy_double_dash_vertical.restype = FfiStr
+    lib.ratatui_line_get_heavy_double_dashed.argtypes = []
+    lib.ratatui_line_get_heavy_double_dashed.restype = FfiSymbolsLineSet
+    lib.ratatui_line_get_heavy_quadruple_dash_horizontal.argtypes = []
+    lib.ratatui_line_get_heavy_quadruple_dash_horizontal.restype = FfiStr
+    lib.ratatui_line_get_heavy_quadruple_dash_vertical.argtypes = []
+    lib.ratatui_line_get_heavy_quadruple_dash_vertical.restype = FfiStr
+    lib.ratatui_line_get_heavy_quadruple_dashed.argtypes = []
+    lib.ratatui_line_get_heavy_quadruple_dashed.restype = FfiSymbolsLineSet
+    lib.ratatui_line_get_heavy_triple_dash_horizontal.argtypes = []
+    lib.ratatui_line_get_heavy_triple_dash_horizontal.restype = FfiStr
+    lib.ratatui_line_get_heavy_triple_dash_vertical.argtypes = []
+    lib.ratatui_line_get_heavy_triple_dash_vertical.restype = FfiStr
+    lib.ratatui_line_get_heavy_triple_dashed.argtypes = []
+    lib.ratatui_line_get_heavy_triple_dashed.restype = FfiSymbolsLineSet
     lib.ratatui_line_get_horizontal.argtypes = []
     lib.ratatui_line_get_horizontal.restype = FfiStr
     lib.ratatui_line_get_horizontal_down.argtypes = []
     lib.ratatui_line_get_horizontal_down.restype = FfiStr
     lib.ratatui_line_get_horizontal_up.argtypes = []
     lib.ratatui_line_get_horizontal_up.restype = FfiStr
+    lib.ratatui_line_get_light_double_dash_horizontal.argtypes = []
+    lib.ratatui_line_get_light_double_dash_horizontal.restype = FfiStr
+    lib.ratatui_line_get_light_double_dash_vertical.argtypes = []
+    lib.ratatui_line_get_light_double_dash_vertical.restype = FfiStr
+    lib.ratatui_line_get_light_double_dashed.argtypes = []
+    lib.ratatui_line_get_light_double_dashed.restype = FfiSymbolsLineSet
+    lib.ratatui_line_get_light_quadruple_dash_horizontal.argtypes = []
+    lib.ratatui_line_get_light_quadruple_dash_horizontal.restype = FfiStr
+    lib.ratatui_line_get_light_quadruple_dash_vertical.argtypes = []
+    lib.ratatui_line_get_light_quadruple_dash_vertical.restype = FfiStr
+    lib.ratatui_line_get_light_quadruple_dashed.argtypes = []
+    lib.ratatui_line_get_light_quadruple_dashed.restype = FfiSymbolsLineSet
+    lib.ratatui_line_get_light_triple_dash_horizontal.argtypes = []
+    lib.ratatui_line_get_light_triple_dash_horizontal.restype = FfiStr
+    lib.ratatui_line_get_light_triple_dash_vertical.argtypes = []
+    lib.ratatui_line_get_light_triple_dash_vertical.restype = FfiStr
+    lib.ratatui_line_get_light_triple_dashed.argtypes = []
+    lib.ratatui_line_get_light_triple_dashed.restype = FfiSymbolsLineSet
     lib.ratatui_line_get_normal.argtypes = []
     lib.ratatui_line_get_normal.restype = FfiSymbolsLineSet
     lib.ratatui_line_get_rounded.argtypes = []
@@ -946,6 +978,8 @@ def _bind_prototypes(lib: C.CDLL) -> None:
     lib.ratatui_list_state_new.restype = C.c_void_p
     lib.ratatui_list_state_set_offset.argtypes = [C.c_void_p, C.c_size_t]
     lib.ratatui_list_state_set_selected.argtypes = [C.c_void_p, C.c_int32]
+    lib.ratatui_marker_get_dot.argtypes = []
+    lib.ratatui_marker_get_dot.restype = FfiStr
     lib.ratatui_next_event.argtypes = [C.c_uint64, C.c_void_p]
     lib.ratatui_next_event.restype = C.c_bool
     lib.ratatui_palette_material_get_amber.argtypes = []
@@ -1066,14 +1100,6 @@ def _bind_prototypes(lib: C.CDLL) -> None:
     lib.ratatui_ratatuimascot_draw_in.restype = C.c_bool
     lib.ratatui_scrollbar_configure.argtypes = [C.c_void_p, C.c_uint32, C.c_uint16, C.c_uint16, C.c_uint16]
     lib.ratatui_scrollbar_free.argtypes = [C.c_void_p]
-    lib.ratatui_scrollbar_get_double_horizontal.argtypes = []
-    lib.ratatui_scrollbar_get_double_horizontal.restype = FfiSymbolsScrollbarSet
-    lib.ratatui_scrollbar_get_double_vertical.argtypes = []
-    lib.ratatui_scrollbar_get_double_vertical.restype = FfiSymbolsScrollbarSet
-    lib.ratatui_scrollbar_get_horizontal.argtypes = []
-    lib.ratatui_scrollbar_get_horizontal.restype = FfiSymbolsScrollbarSet
-    lib.ratatui_scrollbar_get_vertical.argtypes = []
-    lib.ratatui_scrollbar_get_vertical.restype = FfiSymbolsScrollbarSet
     lib.ratatui_scrollbar_new.argtypes = []
     lib.ratatui_scrollbar_new.restype = C.c_void_p
     lib.ratatui_scrollbar_set_block_adv.argtypes = [C.c_void_p, C.c_uint8, C.c_uint32, C.c_uint16, C.c_uint16, C.c_uint16, C.c_uint16, C.c_void_p, C.c_size_t]
@@ -1215,11 +1241,8 @@ def _bind_prototypes(lib: C.CDLL) -> None:
     lib.FfiSpan = FfiSpan
     lib.FfiStr = FfiStr
     lib.FfiStyle = FfiStyle
-    lib.FfiSymbolsBarSet = FfiSymbolsBarSet
-    lib.FfiSymbolsBlockSet = FfiSymbolsBlockSet
     lib.FfiSymbolsBorderSet = FfiSymbolsBorderSet
     lib.FfiSymbolsLineSet = FfiSymbolsLineSet
-    lib.FfiSymbolsScrollbarSet = FfiSymbolsScrollbarSet
     lib.FfiTabsStyles = FfiTabsStyles
     lib.FfiTailwindPaletteU32 = FfiTailwindPaletteU32
     lib.FfiU16Slice = FfiU16Slice
